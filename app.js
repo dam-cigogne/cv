@@ -16,7 +16,7 @@ function setPath(o, path, v) {
 
 const TPLS = [['classique', 'Classique'], ['moderne', 'Moderne'], ['bandeau', 'Bandeau'], ['chrono', 'Chronologie'], ['elegant', 'Élégant']];
 const ACCENTS = ['#1F5BD8', '#0E6B5C', '#7A3FB5', '#C2410C', '#B3372B', '#222B45', '#0F7C9D', '#8A6A12'];
-const SECS = { resume: 'Profil', experiences: 'Expériences professionnelles', formations: 'Formation', competences: 'Compétences', langues: 'Langues', certifs: 'Certifications', loisirs: 'Centres d’intérêt' };
+const SECS = { resume: 'Profil', domaines: 'Domaines de compétences', experiences: 'Expériences professionnelles', formations: 'Formation', competences: 'Compétences', langues: 'Langues', certifs: 'Certifications', loisirs: 'Centres d’intérêt' };
 const SIDE = ['competences', 'langues', 'loisirs'];
 const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretien', 'Entretien'], ['offre', 'Offre reçue'], ['refus', 'Refus']];
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
@@ -25,6 +25,7 @@ const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert
 const KEY = 'cvpoche.v1';
 const defaults = () => ({ cvs: [], jobs: [], checks: {}, set: { theme: 'auto', accent: '#1F5BD8', size: 'normal', filt: 'top', tpl: 'classique', cvAccent: '#1F5BD8', font: 'sans' } });
 let S = (() => { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.cvs) { const d = defaults(); return { ...d, ...s, set: { ...d.set, ...(s.set || {}) } }; } } catch { } return defaults(); })();
+S.cvs.forEach(cv => { if (!cv.order.includes('domaines')) cv.order.splice(Math.max(0, cv.order.indexOf('resume')) + 1, 0, 'domaines'); if (cv.data.domaines == null) cv.data.domaines = ''; });
 let saveT;
 function save() { clearTimeout(saveT); saveT = setTimeout(saveNow, 300); }
 function saveNow() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('Stockage plein : exporte tes données (Réglages)'); } }
@@ -39,8 +40,8 @@ function newCV(name, data) {
   return {
     id: uid(), name: name || 'Mon CV', created: Date.now(), updated: Date.now(),
     tpl: S.set.tpl, accent: S.set.cvAccent, font: S.set.font, scale: 1, photo: true,
-    order: ['resume', 'experiences', 'formations', 'competences', 'langues', 'certifs', 'loisirs'], show: {},
-    data: data || { identity: { nom: '', titre: '', email: '', tel: '', ville: '', adresse: '', site: '', linkedin: '', permis: '', naissance: '', photo: '' }, resume: '', experiences: [], formations: [], competences: [], langues: [], certifs: [], loisirs: '', extra: '' },
+    order: ['resume', 'domaines', 'experiences', 'formations', 'competences', 'langues', 'certifs', 'loisirs'], show: {},
+    data: data || { identity: { nom: '', titre: '', email: '', tel: '', ville: '', adresse: '', site: '', linkedin: '', permis: '', naissance: '', photo: '' }, resume: '', domaines: '', experiences: [], formations: [], competences: [], langues: [], certifs: [], loisirs: '', extra: '' },
   };
 }
 const blank = {
@@ -94,6 +95,16 @@ function secItems(cv, k) {
   });
   return [];
 }
+function domGroups(cv) {
+  const L = String(cv.data.domaines || '').split('\n').map(s => s.trim()).filter(Boolean), groups = [];
+  let cur = null;
+  const esc2 = esc;
+  for (const l of L) {
+    if (l.startsWith('## ')) { cur = { t: l.slice(3), li: [] }; groups.push(cur); }
+    else { if (!cur) { cur = { t: '', li: [] }; groups.push(cur); } cur.li.push(l.replace(/^[-•·*]\s*/, '')); }
+  }
+  return groups.map(g => `<div class="it">${g.t ? `<b>${esc2(g.t)}</b>` : ''}${g.li.length ? '<ul>' + g.li.map(x => `<li>${esc2(x)}</li>`).join('') + '</ul>' : ''}</div>`);
+}
 function secSimple(cv, k) {
   const d = cv.data;
   if (k === 'resume') return d.resume.trim() ? `<p>${esc(d.resume).replace(/\n/g, '<br>')}</p>` : '';
@@ -126,8 +137,8 @@ function buildParts(cv) {
     if (cv.show[k] === false) continue;
     const title = `<div class="st">${esc(SECS[k])}</div>`;
     if (side && SIDE.includes(k)) { const s = secSimple(cv, k); if (s) sideHtml.push(`<div class="blk">${title}${s}</div>`); continue; }
-    if (k === 'experiences' || k === 'formations') {
-      const its = secItems(cv, k); if (!its.length) continue;
+    if (k === 'experiences' || k === 'formations' || k === 'domaines') {
+      const its = k === 'domaines' ? domGroups(cv) : secItems(cv, k); if (!its.length) continue;
       blocks.push(`<div class="blk">${title}${its[0]}</div>`);
       for (let n = 1; n < its.length; n++) blocks.push(`<div class="blk">${its[n]}</div>`);
     } else { const s = secSimple(cv, k); if (s) blocks.push(`<div class="blk">${title}${s}</div>`); }
@@ -209,7 +220,7 @@ function qualityChecks(cv) {
   const sorted = ex.map(e => ({ s: yearOf(e.debut), f: e.actuel ? new Date().getFullYear() : yearOf(e.fin || e.debut) })).filter(x => x.s && x.f).sort((a, b) => b.f - a.f);
   for (let n = 0; n < sorted.length - 1; n++) if (sorted[n].s - sorted[n + 1].f >= 2) { add('warn', `Trou de ${sorted[n].s - sorted[n + 1].f} ans entre deux expériences : explique-le en une ligne si besoin.`); break; }
   if (!act(d.formations).length) add('warn', 'Aucune formation incluse.');
-  const nc = act(d.competences).filter(c => c.nom.trim()).length;
+  const nc = act(d.competences).filter(c => c.nom.trim()).length + (String(d.domaines || '').trim() ? 6 : 0);
   if (nc < 4) add('warn', 'Peu de compétences : vise 6 à 12, choisies selon l’offre.');
   else if (nc > 15) add('warn', `${nc} compétences : trop pour être lues. Garde les 12 plus pertinentes.`);
   const txt = JSON.stringify(d).toLowerCase();
@@ -233,6 +244,7 @@ function cvText(cv) {
     if (cv.show[k] === false) continue;
     const sec = [];
     if (k === 'resume' && d.resume.trim()) sec.push(d.resume);
+    if (k === 'domaines' && String(d.domaines || '').trim()) sec.push(d.domaines.replace(/^## /gm, '').replace(/^- /gm, '• '));
     if (k === 'experiences') act(d.experiences).forEach(e => sec.push(`${e.poste} — ${[e.entreprise, e.lieu].filter(Boolean).join(', ')} (${dateRange(e.debut, e.fin, e.actuel)})\n${e.desc}`));
     if (k === 'formations') act(d.formations).forEach(f => sec.push(`${f.diplome} — ${f.ecole} (${[f.debut, f.fin].filter(Boolean).join(' – ')})`));
     if (k === 'competences') { const l = act(d.competences).map(c => c.nom).filter(Boolean); if (l.length) sec.push(l.join(', ')); }
@@ -405,7 +417,8 @@ function edFormation(cv) {
 }
 function edComp(cv) {
   const d = cv.data;
-  return `<div class="card"><h2>Compétences</h2><div class="small muted">Coche celles à garder dans ce CV. Choisis-les selon l’offre visée.</div>
+  return `<div class="card"><h2>Domaines de compétences</h2><div class="small muted">Texte libre : « ## Titre » pour un sous-titre, puis une puce par ligne (« - »). Laisse vide si tu n’en as pas besoin.</div><label class="f"><textarea data-p="data.domaines" rows="10">${esc(cv.data.domaines || '')}</textarea></label></div>
+  <div class="card"><h2>Compétences</h2><div class="small muted">Coche celles à garder dans ce CV. Choisis-les selon l’offre visée.</div>
    <div>${d.competences.map(c => `<div class="skill"><input type="checkbox" data-l="competences" data-i="${c.id}" data-k="on" data-r="1" ${c.on !== false ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--accent)"><input class="t" data-l="competences" data-i="${c.id}" data-k="nom" value="${esc(c.nom)}"><select data-l="competences" data-i="${c.id}" data-k="niveau" data-num="1">${NIV.map((n, v) => `<option value="${v}" ${+c.niveau === v ? 'selected' : ''}>${n}</option>`).join('')}</select><button class="ib sm" data-act="delitem" data-l="competences" data-i="${c.id}">✕</button></div>`).join('')}</div>
    <div class="row2"><input id="newskill" class="skill-in" placeholder="Ajouter (séparées par des virgules)" style="flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 12px"><button class="btn sm" data-act="addskill">Ajouter</button></div></div>
   <div class="card"><h2>Langues</h2>
@@ -563,14 +576,14 @@ function showImport() {
   <div class="small muted">Ce que l’appli a reconnu. Tu pourras tout corriger ensuite.</div>
   <div class="card" style="gap:2px">
    ${[['Nom', s.nom, r.data.identity.nom], ['Titre', s.titre, r.data.identity.titre], ['Email', s.email, r.data.identity.email], ['Téléphone', s.tel, r.data.identity.tel], ['Ville', s.ville, r.data.identity.ville]].map(([l, v, t]) => `<div class="check"><span style="flex:1"><b>${l}</b><div class="small muted">${esc(t || '')}</div></span>${ok(v)}</div>`).join('')}
-   ${[['Expériences', s.experiences], ['Formations', s.formations], ['Compétences', s.competences], ['Langues', s.langues]].map(([l, n]) => `<div class="check"><span style="flex:1"><b>${l}</b></span><span class="chip ${n ? 'ok' : 'warn'}">${n}</span></div>`).join('')}</div>
+   ${[['Expériences', s.experiences], ['Formations', s.formations], ['Compétences', s.competences], ['Domaines de compétences', s.domaines], ['Langues', s.langues], ['Certifications', s.certifs]].map(([l, n]) => `<div class="check"><span style="flex:1"><b>${l}</b></span><span class="chip ${n ? 'ok' : 'warn'}">${n}</span></div>`).join('')}</div>
   <label class="f">Nom du CV<input data-u="imp.name" value="${esc(name)}"></label>
   <button class="btn" data-act="doimport">Créer le CV et vérifier</button>`);
 }
 function doImport() {
   const { r, name } = ui.imp, d = r.data;
   const cv = newCV(name || 'CV importé', {
-    identity: d.identity, resume: d.resume, loisirs: d.loisirs, extra: d.extra,
+    identity: d.identity, resume: d.resume, domaines: d.domaines || '', loisirs: d.loisirs, extra: d.extra,
     experiences: d.experiences.map(e => ({ id: uid(), on: true, ...e })), formations: d.formations.map(e => ({ id: uid(), on: true, ...e })),
     competences: d.competences.map(e => ({ id: uid(), on: true, ...e })), langues: d.langues.map(e => ({ id: uid(), on: true, ...e })), certifs: d.certifs.map(e => ({ id: uid(), on: true, ...e })),
   });

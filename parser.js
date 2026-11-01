@@ -6,12 +6,13 @@ export const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, ''
 
 const HEADS = {
   experiences: ['experience professionnelle', 'experiences professionnelles', 'experience', 'experiences', 'parcours professionnel', 'emplois', 'emploi', 'work experience', 'professional experience', 'employment history', 'experience pro', 'missions', 'carriere', 'historique professionnel'],
-  formations: ['formation', 'formations', 'education', 'etudes', 'diplomes', 'parcours scolaire', 'parcours academique', 'formation et diplomes', 'scolarite', 'cursus', 'parcours de formation'],
-  competences: ['competences', 'competences cles', 'skills', 'savoir faire', 'competences techniques', 'outils', 'technologies', 'key skills', 'aptitudes', 'expertises', 'domaines de competences', 'logiciels', 'competences professionnelles', 'atouts', 'qualites'],
+  formations: ['formation', 'formations', 'education', 'etudes', 'diplomes', 'diplomes formations', 'formations diplomes', 'diplomes et formations', 'formations et diplomes', 'formation et diplome', 'parcours scolaire', 'parcours academique', 'formation et diplomes', 'scolarite', 'cursus', 'parcours de formation'],
+  competences: ['competences', 'competences cles', 'skills', 'savoir faire', 'competences techniques', 'outils', 'technologies', 'key skills', 'aptitudes', 'expertises', 'domaines de competences', 'domaine de competences', 'domaine de competence', 'competences et savoir faire', 'logiciels', 'competences professionnelles', 'atouts', 'qualites'],
   langues: ['langues', 'languages', 'langue'],
   loisirs: ['loisirs', 'centres d interet', 'centres d interets', 'interets', 'hobbies', 'interests', 'activites', 'passions', 'vie associative'],
   resume: ['profil', 'resume', 'a propos', 'about', 'about me', 'objectif', 'summary', 'profile', 'presentation', 'objectif professionnel', 'mon profil', 'profil professionnel', 'qui suis je'],
   certifs: ['certifications', 'certificats', 'habilitations', 'formations complementaires', 'certification', 'distinctions', 'permis et habilitations', 'diplomes et certifications'],
+  autres: ['informations complementaires', 'autres informations', 'informations supplementaires', 'complements', 'divers', 'autres', 'complementaire', 'complementaires'],
   contact: ['contact', 'coordonnees', 'informations', 'informations personnelles', 'infos', 'me contacter', 'details', 'etat civil', 'infos perso'],
 };
 const HEADMAP = {};
@@ -21,6 +22,44 @@ export function headingOf(line) {
   const n = norm(line);
   if (!n || n.length > 36) return null;
   return HEADMAP[n] || null;
+}
+
+// Titre de rubrique écrit sur deux lignes (ex. INFORMATIONS / COMPLÉMENTAIRES).
+function mergeHeadings(lines) {
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    const a = lines[i], b = lines[i + 1];
+    if (b && a.text.length <= 26 && b.text.length <= 26 && a.text === a.text.toUpperCase() && b.text === b.text.toUpperCase()
+      && Math.abs(a.size - b.size) < 0.4 && Math.abs(a.x - b.x) < 6 && headingOf(a.text + ' ' + b.text)) {
+      out.push({ ...a, text: a.text + ' ' + b.text }); i++;
+    } else out.push(a);
+  }
+  return out;
+}
+const CONNECT = /(?:^|\s)(?:et|ou|de|du|des|d['’]|l['’]|la|le|les|à|au|aux|en|pour|par|sur|avec|dans)$/i;
+// Recolle les lignes coupées par le retour à la ligne automatique du PDF.
+function joinWrapped(ls) {
+  const out = [];
+  for (const l of ls) {
+    const t = l.text.replace(/\t/g, ' ');
+    const last = out[out.length - 1];
+    if (last && Math.abs(last.x - l.x) <= 3.5 && Math.abs(last.size - l.size) < 0.8 && !isBullet(t) && !parseDate(t, false)
+      && ((!/[.!?:;]$/.test(last.text) && /^[a-zà-ÿ(]/.test(t)) || CONNECT.test(last.text))) {
+      last.text += ' ' + t; continue;
+    }
+    out.push({ ...l, text: t });
+  }
+  return out;
+}
+// Les lignes plus indentées que la ligne de titre d'une entrée deviennent des puces.
+function markIndent(ls) {
+  let ref = null;
+  return ls.map(l => {
+    if (parseDate(l.text, false)) { ref = null; return l.text; }
+    if (isBullet(l.text)) return l.text;
+    if (ref === null) { ref = l.x; return l.text; }
+    return l.x > ref + 8 ? '- ' + l.text : l.text;
+  });
 }
 
 // ---------- lignes à partir des items pdf.js ----------
@@ -149,7 +188,7 @@ function mergeDesc(lines) {
   return out.join('\n');
 }
 
-const headerish = l => l && l.length <= 90 && !isBullet(l) && !/[.!?]$/.test(l.trim());
+const headerish = (l, loose) => l && l.length <= (loose ? 150 : 90) && !isBullet(l) && (loose || !/[.!?]$/.test(l.trim()));
 
 const COMPANY_HINT = /\b(sas|sarl|sa|inc|ltd|gmbh|group|groupe|corp|societe|société|entreprise|cabinet|agence|mairie|ministère|ministere|armée|armee|université|universite)\b/i;
 
@@ -159,6 +198,15 @@ function splitHeader(lines) {
   let [a = '', b = '', c = ''] = parts;
   if (a && b && COMPANY_HINT.test(a) && !COMPANY_HINT.test(b)) [a, b] = [b, a];
   if (b && !c) { const m = b.match(/^(.+?),\s*([^,\d]{2,24})$/); if (m) { b = m[1].trim(); c = m[2].trim(); } }
+  if (parts.length === 1 && a.length > 40) {
+    const m = a.match(/^(.+?)\s+(?:au sein (?:d['’]\s*|de l['’]\s*|de la |du |des |de )|chez |pour )(.+)$/i);
+    if (m) { a = m[1].trim(); b = m[2].trim(); }
+  }
+  if (!c) {
+    const tgt = b || a;
+    const m = tgt.match(/^(.+?)\s+à\s+([A-ZÀ-Ý][\p{L}'’\-]*(?: [A-ZÀ-Ý][\p{L}'’\-]*){0,2})\.?$/u);
+    if (m) { if (b) b = m[1].trim(); else a = m[1].trim(); c = m[2].trim(); }
+  }
   return { a, b, c, rest: parts.slice(3).join(' · ') };
 }
 
@@ -196,7 +244,7 @@ function splitEntries(lines, allowSingle) {
       from = di + 1;
       const maxHead = d.rest ? 1 : 2;
       let hs = 0;
-      while (hs < maxHead && from < nextDi && headerish(lines[from]) && !info[from]) { head.push(lines[from]); from++; hs++; }
+      while (hs < maxHead && from < nextDi && headerish(lines[from], hs === 0) && !info[from]) { head.push(lines[from]); from++; hs++; }
       to = nextDi;
       if (n === 0 && di > 0) leftover = leftover.concat(lines.slice(0, di));
     }
@@ -257,7 +305,7 @@ const PHONE = /(?:\+33\s?\(?0?\)?\s?|0033\s?|\b0)[1-9](?:[\s.\-]?\d{2}){4}/;
 const PHONE2 = /\+?\d[\d\s.\-()]{8,16}\d/;
 const LINKEDIN = /(?:https?:\/\/)?(?:[a-z]{2,3}\.)?linkedin\.com\/[\w\-\/%]+/i;
 const URLX = /(?:https?:\/\/|www\.)[^\s]+/i;
-const POSTAL = /\b(\d{5})\s+([A-ZÀ-Ý][\p{L}'’ \-]{1,30})/u;
+const POSTAL = /\b(\d{5})\s*,?\s*([A-ZÀ-Ý][\p{L}'’ \-]{1,30})/u;
 
 function extractIdentity(headLines, contactLines, allFirstPage) {
   const id = { nom: '', titre: '', email: '', tel: '', ville: '', adresse: '', site: '', linkedin: '', permis: '', naissance: '', photo: '' };
@@ -279,18 +327,38 @@ function extractIdentity(headLines, contactLines, allFirstPage) {
     t = cleanSep(t.replace(/^(?:t[ée]l|tel|mobile|e-?mail|mail|adresse|phone|linkedin|site)\s*[.:]?\s*/i, ''));
     if (!used || t.length > 3) left.push({ ...l, text: t || l.text, used });
   }
-  // nom et titre : plus grosse police de la page 1, hors coordonnées
-  const cand = allFirstPage.filter(l => l.text.length >= 3 && l.text.length <= 44 && !EMAIL.test(l.text) && !PHONE.test(l.text) && !URLX.test(l.text) && !/\d{3,}/.test(l.text) && !headingOf(l.text));
-  cand.sort((a, b) => (b.size - a.size) || (b.y - a.y));
-  const nameLine = cand[0];
-  if (nameLine) {
-    id.nom = nameLine.text.replace(/\t/g, ' ');
-    // titre : ligne la plus proche sous le nom, taille inférieure, texte non contact
-    const below = allFirstPage.filter(l => l.y < nameLine.y && nameLine.y - l.y < nameLine.size * 5 && l !== nameLine && l.text.length <= 80 && l.text.length >= 4 && !EMAIL.test(l.text) && !PHONE.test(l.text) && !URLX.test(l.text) && !POSTAL.test(l.text) && !headingOf(l.text) && !/\d{4}/.test(l.text));
-    below.sort((a, b) => b.y - a.y);
-    if (below[0]) id.titre = below[0].text.replace(/\t/g, ' ');
+  // nom : plus grosse police de la page 1 (peut tenir sur plusieurs lignes), hors coordonnées
+  const contactish = t => EMAIL.test(t) || PHONE.test(t) || URLX.test(t) || POSTAL.test(t) || /\d{3,}/.test(t);
+  const sizes = allFirstPage.map(l => l.size).sort((a, b) => a - b);
+  const body = sizes[Math.floor(sizes.length / 2)] || 10;
+  const cand = allFirstPage.filter(l => l.text.length >= 2 && l.text.length <= 44 && !contactish(l.text) && !headingOf(l.text));
+  const maxSize = Math.max(0, ...cand.map(l => l.size));
+  let nameLines = cand.filter(l => l.size >= maxSize - 0.6).sort((a, b) => b.y - a.y);
+  if (nameLines.length) {
+    const keep = [nameLines[0]];
+    for (const l of nameLines.slice(1)) if (keep.length < 3 && keep[keep.length - 1].y - l.y <= maxSize * 1.9) keep.push(l);
+    nameLines = keep;
   }
-  return { id, left, nameLine };
+  const skip = new Set();
+  if (nameLines.length) {
+    id.nom = nameLines.map(l => l.text.replace(/\t/g, ' ')).join(' ');
+    nameLines.forEach(l => skip.add(l.text));
+    const top = nameLines[0].y, bot = nameLines[nameLines.length - 1].y;
+    // titre : texte nettement plus grand que le corps, près du nom (même colonne ou colonne voisine)
+    const thr = Math.max(body * 1.25, 11.5);
+    let tc = allFirstPage.filter(l => !skip.has(l.text) && l.text.length >= 4 && l.text.length <= 90 && !contactish(l.text) && !headingOf(l.text) && l.size >= thr && l.size < maxSize - 0.6);
+    const band = tc.filter(l => l.y <= top + maxSize * 2 && l.y >= bot - maxSize * 6);
+    if (band.length) tc = band;
+    tc.sort((a, b) => b.y - a.y);
+    let title = tc[0];
+    if (!title) {
+      const below = allFirstPage.filter(l => l.y < bot && bot - l.y < maxSize * 5 && !skip.has(l.text) && l.text.length <= 80 && l.text.length >= 4 && !contactish(l.text) && !headingOf(l.text) && !/\d{4}/.test(l.text));
+      below.sort((a, b) => b.y - a.y);
+      title = below[0];
+    }
+    if (title) { id.titre = title.text.replace(/\t/g, ' '); skip.add(title.text); }
+  }
+  return { id, left, nameLine: nameLines[0], skip };
 }
 
 // ---------- parseur principal ----------
@@ -300,22 +368,22 @@ export function parseCV(pages) {
   if (total < 3) return { ok: false, reason: 'no-text', data: null, stats: {}, raw: {} };
 
   // sections
-  const sec = { header: [], contact: [], resume: [], experiences: [], formations: [], competences: [], langues: [], loisirs: [], certifs: [] };
+  const sec = { header: [], contact: [], resume: [], experiences: [], formations: [], competences: [], langues: [], loisirs: [], certifs: [], autres: [] };
   const first = cols.filter(c => c.page === 0).flatMap(c => c.lines);
   for (const col of cols) {
     let cur = 'header';
-    for (const l of col.lines) {
+    for (const l of mergeHeadings(col.lines)) {
       const h = headingOf(l.text);
       if (h) { cur = h; continue; }
       (sec[cur] || sec.header).push(l);
     }
   }
-  const { id, left, nameLine } = extractIdentity(sec.header, sec.contact, first);
+  const { id, left, nameLine, skip } = extractIdentity(sec.header, sec.contact, first);
   const extra = [];
 
   // résumé : section dédiée, sinon phrases longues de l'en-tête
   let resumeLines = sec.resume.map(l => l.text);
-  const headLeft = left.filter(l => l.text !== id.nom && l.text !== id.titre && l !== nameLine);
+  const headLeft = left.filter(l => l.text !== id.nom && l.text !== id.titre && !skip.has(l.text));
   if (!resumeLines.length) {
     const longs = headLeft.filter(l => l.text.length > 70).map(l => l.text);
     if (longs.length) resumeLines = longs;
@@ -324,7 +392,7 @@ export function parseCV(pages) {
   const resume = resumeLines.map(s => s.replace(/\t/g, ' ')).join(' ').replace(/\s+/g, ' ').trim();
 
   // expériences
-  const ex = splitEntries(sec.experiences.map(l => l.text), false);
+  const ex = splitEntries(markIndent(joinWrapped(sec.experiences)), false);
   const experiences = ex.entries.map(e => {
     const h = splitHeader(e.head);
     return {
@@ -334,42 +402,67 @@ export function parseCV(pages) {
   });
   if (ex.leftover.length) ex.leftover.forEach(l => extra.push(l));
   if (!ex.entries.length && sec.experiences.length) {
-    const t = mergeDesc(sec.experiences.map(l => l.text));
+    const t = mergeDesc(joinWrapped(sec.experiences).map(l => l.text));
     experiences.push({ poste: 'Expérience (à compléter)', entreprise: '', lieu: '', debut: '', fin: '', actuel: false, desc: t });
   }
 
   // formations
-  const fo = splitEntries(sec.formations.map(l => l.text), true);
-  const formations = fo.entries.map(e => {
-    const h = splitHeader(e.head);
-    return { diplome: h.a, ecole: h.b || h.c, debut: e.d.single ? '' : (e.d.start || ''), fin: e.d.single ? e.d.end : (e.d.end || (e.d.actuel ? '' : '')), desc: mergeDesc(e.desc) };
-  });
-  if (fo.leftover.length) fo.leftover.forEach(l => extra.push(l));
-  if (!fo.entries.length && sec.formations.length) {
-    sec.formations.forEach(l => formations.push({ diplome: l.text.replace(/\t/g, ' '), ecole: '', debut: '', fin: '', desc: '' }));
+  const foLines = joinWrapped(sec.formations).map(l => l.text);
+  const fo = splitEntries(foLines, true);
+  let formations;
+  if (fo.entries.length && fo.entries.length >= foLines.length / 3) {
+    formations = fo.entries.map(e => {
+      const h = splitHeader(e.head);
+      return { diplome: h.a, ecole: h.b || h.c, debut: e.d.single ? '' : (e.d.start || ''), fin: e.d.single ? e.d.end : (e.d.end || ''), desc: mergeDesc(e.desc) };
+    });
+    fo.leftover.forEach(l => extra.push(l));
+  } else {
+    // une formation par ligne (liste sans dates en tête)
+    formations = foLines.map(t => {
+      const d = parseDate(t, true);
+      if (d && d.rest) return { diplome: d.rest, ecole: '', debut: d.single ? '' : d.start, fin: d.single ? d.end : d.end, desc: '' };
+      return { diplome: t, ecole: '', debut: '', fin: '', desc: '' };
+    });
   }
 
-  // compétences / langues / loisirs / certifs
-  const competences = tokens(sec.competences.map(l => l.text)).map(t => {
-    const m = t.match(/^(.*?)\s*[:(\-–]\s*([A-Za-zÀ-ÿ0-9 ]{3,20})\)?$/);
-    if (m && levelOf(m[2])) return { nom: m[1].trim(), niveau: levelOf(m[2]) };
-    return { nom: t, niveau: 0 };
-  }).filter(c => c.nom && c.nom.length > 1);
-  const langues = parseLangues(sec.langues.map(l => l.text));
-  const loisirs = tokens(sec.loisirs.map(l => l.text)).join(', ');
-  const certifs = sec.certifs.map(l => l.text.replace(/\t/g, ' ')).filter(t => t.length > 2).map(t => {
+  // compétences : liste courte -> étiquettes ; phrases -> « domaines de compétences »
+  const cl = sec.competences;
+  const nbPhrases = cl.filter(l => l.text.split(/\s+/).length >= 4).length;
+  let competences = [], domaines = '';
+  if (cl.length >= 4 && nbPhrases >= cl.length * 0.5) {
+    const sz = cl.map(l => l.size).sort((a, b) => a - b), med = sz[Math.floor(sz.length / 2)];
+    domaines = joinWrapped(cl).map(l => (l.size > med + 0.4 && l.text.length <= 70) ? '## ' + l.text : '- ' + l.text.replace(BUL, '').trim()).join('\n');
+  } else {
+    competences = tokens(cl.map(l => l.text)).map(t => {
+      const m = t.match(/^(.*?)\s*[:(\-–]\s*([A-Za-zÀ-ÿ0-9 ]{3,20})\)?$/);
+      if (m && levelOf(m[2])) return { nom: m[1].trim(), niveau: levelOf(m[2]) };
+      return { nom: t, niveau: 0 };
+    }).filter(c => c.nom && c.nom.length > 1);
+  }
+  const langues = parseLangues(joinWrapped(sec.langues).map(l => l.text));
+  let loisirsList = tokens(sec.loisirs.map(l => l.text));
+  const certifs = joinWrapped(sec.certifs).map(l => l.text).filter(t => t.length > 2).map(t => {
     const y = t.match(/\b(?:19|20)\d{2}\b/);
     return { nom: cleanSep(t.replace(y ? y[0] : '', '')), annee: y ? y[0] : '' };
   });
+  // « informations complémentaires » : langues, habilitations, divers
+  joinWrapped(sec.autres).map(l => l.text.replace(BUL, '').trim()).filter(t => t.length > 2).forEach(t => {
+    const n = norm(t);
+    if (LANGS.some(L => n === L || n.startsWith(L + ' '))) langues.push(...parseLangues([t]));
+    else if (/habilitation|permis|certific|secret|defense|otan|brevet|licence|agrement/.test(n)) certifs.push({ nom: t, annee: '' });
+    else loisirsList.push(t);
+  });
+  const loisirs = loisirsList.join(', ');
 
   // contact restant (adresse etc.) : à garder dans "extra" si utile
   const data = {
-    identity: id, resume, experiences, formations, competences, langues, loisirs, certifs,
+    identity: id, resume, experiences, formations, competences, domaines, langues, loisirs, certifs,
     extra: [...new Set(extra.map(s => String(s).replace(/\t/g, ' ').trim()).filter(s => s.length > 2))].join('\n'),
   };
   const stats = {
     nom: !!id.nom, titre: !!id.titre, email: !!id.email, tel: !!id.tel, ville: !!id.ville,
     resume: !!resume, experiences: experiences.length, formations: formations.length, competences: competences.length, langues: langues.length,
+    domaines: domaines ? domaines.split('\n').filter(x => x.startsWith('- ')).length : 0, certifs: certifs.length,
   };
   const raw = Object.fromEntries(Object.entries(sec).map(([k, v]) => [k, v.map(l => l.text)]));
   return { ok: true, data, stats, raw, columns: cols.length };
