@@ -22,8 +22,9 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 const CHANGELOG = [
+  { v: '1.3.0', d: '01/11/2026', l: ['Onglets verticaux sur le bord droit (comme Comptes en ligne) partout : Réglages, éditeur, Suivi, Guide', 'Mode « Sur le côté » activé par défaut'] },
   { v: '1.2.0', d: '01/11/2026', l: ['Version de l’appli et liste des mises à jour dans Réglages', 'Bouton « Vérifier les mises à jour »'] },
   { v: '1.1.0', d: '01/11/2026', l: ['Import PDF amélioré : nom sur plusieurs lignes, titre dans la colonne de droite, ville après le code postal, puces détectées par l’indentation, formations en liste, « Informations complémentaires » classées', 'Nouvelle rubrique « Domaines de compétences » (sous-titres et puces)', 'Mise à jour automatique : l’appli prend toujours la dernière version quand le réseau est là, et reste utilisable hors connexion'] },
   { v: '1.0.1', d: '01/11/2026', l: ['Correctif : import de PDF qui ne démarrait pas (fichiers de lecture mal placés)'] },
@@ -44,8 +45,9 @@ async function checkUpdate() {
 
 /* ============ état ============ */
 const KEY = 'cvpoche.v1';
-const defaults = () => ({ cvs: [], jobs: [], checks: {}, set: { theme: 'auto', accent: '#1F5BD8', size: 'normal', filt: 'top', tpl: 'classique', cvAccent: '#1F5BD8', font: 'sans' } });
+const defaults = () => ({ cvs: [], jobs: [], checks: {}, set: { theme: 'auto', accent: '#1F5BD8', size: 'normal', filt: 'side', tpl: 'classique', cvAccent: '#1F5BD8', font: 'sans' } });
 let S = (() => { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.cvs) { const d = defaults(); return { ...d, ...s, set: { ...d.set, ...(s.set || {}) } }; } } catch { } return defaults(); })();
+if (!S.set.sideV13) { S.set.sideV13 = 1; S.set.filt = 'side'; }
 S.cvs.forEach(cv => { if (!cv.order.includes('domaines')) cv.order.splice(Math.max(0, cv.order.indexOf('resume')) + 1, 0, 'domaines'); if (cv.data.domaines == null) cv.data.domaines = ''; });
 let saveT;
 function save() { clearTimeout(saveT); saveT = setTimeout(saveNow, 300); }
@@ -391,7 +393,7 @@ function viewEditor(cv) {
   const body = { infos: edInfos, parcours: edParcours, formation: edFormation, comp: edComp, plus: edPlus, style: edStyle, controle: edControle }[ui.edTab](cv);
   return `<div class="wrap">
    <div class="edhead"><div class="edtitle"><button class="ib" data-act="back" aria-label="Retour">←</button><input data-p="name" value="${esc(cv.name)}" aria-label="Nom du CV"><button class="ib" data-act="cvmenu" data-id="${cv.id}" aria-label="Plus">⋯</button></div>
-   <div class="scrollx">${ET.map(([k, l]) => `<button class="${ui.edTab === k ? 'on' : ''}" data-act="edtab" data-v="${k}">${l}</button>`).join('')}</div></div>
+   <div class="scrollx vt">${ET.map(([k, l]) => `<button class="${ui.edTab === k ? 'on' : ''}" data-act="edtab" data-v="${k}">${l}</button>`).join('')}</div></div>
    ${cv.review ? `<div class="banner"><span>CV importé : vérifie chaque rubrique, la lecture automatique peut se tromper. Le texte non classé est dans « Plus ».</span><button class="btn sm ghost" data-act="dismiss">OK</button></div>` : ''}
    ${body}</div>
    <div class="edbar"><div class="in"><button class="btn" data-act="prev" data-id="${cv.id}">Aperçu et PDF</button></div></div>`;
@@ -497,7 +499,7 @@ function tabSuivi() {
   const due = S.jobs.filter(j => j.statut === 'envoyee' && j.relance && j.relance <= today).length;
   return `<div class="wrap"><div class="top"><span class="app">Suivi</span><button class="btn sm" data-act="newjob">+ Candidature</button></div>
   ${due ? `<div class="banner"><span>${due} relance${due > 1 ? 's' : ''} à faire.</span></div>` : ''}
-  <div class="withfilt"><div class="catbar"><button class="${f === 'all' ? 'on' : ''}" data-act="jf" data-v="all">Toutes<span> ${S.jobs.length}</span></button>${STATUTS.map(([k, l]) => `<button class="${f === k ? 'on' : ''}" data-act="jf" data-v="${k}">${l}<span> ${cnt(k)}</span></button>`).join('')}</div>
+  <div class="withfilt"><div class="catbar vt"><button class="${f === 'all' ? 'on' : ''}" data-act="jf" data-v="all">Toutes<span> ${S.jobs.length}</span></button>${STATUTS.map(([k, l]) => `<button class="${f === k ? 'on' : ''}" data-act="jf" data-v="${k}">${l}<span> ${cnt(k)}</span></button>`).join('')}</div>
   <div class="card">${list.length ? list.map(j => {
     const cv = S.cvs.find(c => c.id === j.cvId), st = (STATUTS.find(s => s[0] === j.statut) || [, ''])[1];
     const late = j.statut === 'envoyee' && j.relance && j.relance < today, tod = j.statut === 'envoyee' && j.relance === today;
@@ -522,7 +524,7 @@ const newJob = () => ({ id: uid(), poste: '', entreprise: '', url: '', statut: '
 function tabGuide() {
   const g = ui.gcat;
   return `<div class="wrap"><div class="top"><span class="app">Guide du CV</span></div>
-  <div class="withfilt"><div class="catbar">${GCATS.map(([k, l]) => `<button class="${g === k ? 'on' : ''}" data-act="gcat" data-v="${k}">${l}</button>`).join('')}</div>
+  <div class="withfilt"><div class="catbar vt">${GCATS.map(([k, l]) => `<button class="${g === k ? 'on' : ''}" data-act="gcat" data-v="${k}">${l}</button>`).join('')}</div>
   <div style="display:flex;flex-direction:column;gap:14px">${GUIDE.filter(x => x.c === g).map(x => `<div class="card tip"><h3>${x.t}</h3>${x.p ? `<p>${x.p}</p>` : ''}${x.l ? `<ul>${x.l.map(i => `<li>${i}</li>`).join('')}</ul>` : ''}${x.ba ? x.ba.map(b => `<div class="ba"><div class="no"><b>À éviter</b>${b[0]}</div><div class="yes"><b>Mieux</b>${b[1]}</div></div>`).join('') : ''}${x.verbes ? `<div class="chips">${VERBES.map(v => `<button data-act="copyverb" data-w="${v}">${v}</button>`).join('')}</div>` : ''}</div>`).join('')}
   ${g === 'candidature' ? `<div class="card"><h3>Avant d’envoyer</h3>${CHECKLIST.map((c, n) => `<button class="cl ${S.checks[n] ? 'on' : ''}" data-act="cl" data-n="${n}"><span class="cb">${S.checks[n] ? '✓' : ''}</span><span>${c}</span></button>`).join('')}<button class="btn sm ghost" data-act="clreset">Réinitialiser</button></div>` : ''}</div></div></div>`;
 }
@@ -547,7 +549,7 @@ function tabRegl() {
   if (t === 'maj') body = `<div class="card"><h2>Version ${APP_VERSION}</h2><div class="small muted">Dernière mise à jour : ${CHANGELOG[0].d}</div><button class="btn" data-act="checkupd">Vérifier les mises à jour</button></div>
    ${CHANGELOG.map(c => `<div class="card tip"><h3>Version ${c.v} <span class="chip">${c.d}</span></h3><ul>${c.l.map(x => `<li>${x}</li>`).join('')}</ul></div>`).join('')}`;
   return `<div class="wrap"><div class="top"><span class="app">Réglages</span><span class="chip">v${APP_VERSION}</span></div>
-  <div class="scrollx">${[['app', 'Apparence'], ['cv', 'Modèles'], ['data', 'Données'], ['maj', 'Mises à jour'], ['about', 'À propos']].map(([k, l]) => `<button class="${t === k ? 'on' : ''}" data-act="stab" data-v="${k}">${l}</button>`).join('')}</div>${body}</div>`;
+  <div class="scrollx vt">${[['app', 'Apparence'], ['cv', 'Modèles'], ['data', 'Données'], ['maj', 'Mises à jour'], ['about', 'À propos']].map(([k, l]) => `<button class="${t === k ? 'on' : ''}" data-act="stab" data-v="${k}">${l}</button>`).join('')}</div>${body}</div>`;
 }
 
 /* ============ aperçu / impression ============ */

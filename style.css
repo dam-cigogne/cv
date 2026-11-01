@@ -78,9 +78,13 @@ button{cursor:pointer}
 .seg{display:flex;flex-wrap:wrap;gap:6px}
 
 /* filtres sur le côté (réglage) */
-body.filt-side .withfilt{display:grid;grid-template-columns:104px 1fr;gap:12px;align-items:start}
-body.filt-side .withfilt>.catbar{flex-direction:column;flex-wrap:nowrap;position:sticky;top:10px}
-body.filt-side .withfilt>.catbar button{border-radius:12px;text-align:left}
+body.filt-side .wrap{padding-right:34px}
+body.filt-side .edhead{backdrop-filter:none;-webkit-backdrop-filter:none}
+body.filt-side .vt{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:24;flex-direction:column;flex-wrap:nowrap;gap:0;max-height:78vh;overflow-y:auto;padding:0;margin:0;background:var(--surface);border:1px solid var(--line);border-right:0;border-radius:14px 0 0 14px;box-shadow:0 8px 24px -12px rgba(0,0,0,.4)}
+body.filt-side .vt button{writing-mode:vertical-rl;white-space:nowrap;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:12px 7px;font-size:13px;background:transparent;color:var(--ink);min-height:0}
+body.filt-side .vt button:first-child{border-radius:14px 0 0 0}
+body.filt-side .vt button:last-child{border-bottom:0;border-radius:0 0 0 14px}
+body.filt-side .vt button.on{background:var(--accent);color:var(--accent-ink)}
 
 label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);min-width:0}
 label.f input,label.f select,label.f textarea{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 12px;color:var(--ink);width:100%;min-width:0}
