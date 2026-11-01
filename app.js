@@ -23,8 +23,9 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.8.0';
+const APP_VERSION = '1.8.1';
 const CHANGELOG = [
+  { v: '1.8.1', d: '01/11/2026', l: ['Onglets du côté : largeur fixe, le texte est enfin visible en entier sur iPad', 'Téléphone en mode paysage : même disposition que l’iPad (options à gauche, CV à droite, barre du milieu réglable)'] },
   { v: '1.8.0', d: '01/11/2026', l: ['Offre : « Métiers qui te correspondent » — une centaine de métiers classés selon ton CV (aéronautique très détaillé), avec les mots-clés qui collent et ceux à acquérir, et un bouton pour créer un CV adapté', 'Réglages > Métiers : choisis un ou plusieurs domaines, masque des métiers, ajoute les tiens', 'iPad : les onglets ne cachent plus le CV (colonne dédiée à droite) et la barre du milieu se glisse de gauche à droite pour régler la taille', 'Onglets verticaux compatibles avec les anciens iPad et iPhone', 'Suivi : date, heure, durée et lieu des entretiens', 'Suivi > 📅 Agenda : envoi des entretiens et relances vers AgenDam par un lien, ou en fichier .ics pour Apple, Outlook, Google'] },
   { v: '1.7.0', d: '01/11/2026', l: ['Offre : tu choisis les sites d’emploi — masquer, supprimer, ajouter les tiens (colle l’adresse d’une recherche, l’appli la transforme), réinitialiser'] },
   { v: '1.6.0', d: '01/11/2026', l: ['Sauvegarde : l’export ouvre maintenant la feuille de partage sur iPhone et iPad (Enregistrer dans Fichiers, AirDrop, Mail…)', 'Offre : « Trouver des offres » ouvre les grands sites d’emploi avec ta recherche déjà remplie', 'Offre : bouton « Coller l’annonce » depuis le presse-papiers'] },
@@ -812,7 +813,7 @@ function cropSave() {
 let liveT;
 function updLive() {
   const cv = ui.ed && curCV(), box = $('#lps'); if (!cv || !box) return;
-  const r = renderPages(cv), side = document.body.classList.contains('filt-side') && !matchMedia('(min-width:900px)').matches;
+  const r = renderPages(cv), side = document.body.classList.contains('filt-side') && !matchMedia('(min-width:640px) and (orientation:landscape), (min-width:900px)').matches;
   const w = Math.max(150, box.clientWidth - 24 - (side ? 30 : 0)) * (ui.lz || 1), k = w / PAGE_W, h = w * 297 / 210, st = box.scrollTop;
   box.innerHTML = `<div class="lpin" style="width:${w + 24}px">${r.pages.map(p => `<div class="pgbox" style="width:${w}px;height:${h}px"><div style="transform:scale(${k});transform-origin:0 0;width:${PAGE_W}px">${p}</div></div>`).join('')}</div>`;
   box.scrollTop = st;
