@@ -23,8 +23,10 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.8.2';
+const APP_VERSION = '1.8.4';
 const CHANGELOG = [
+  { v: '1.8.4', d: '02/11/2026', l: ['Réglages > Métiers : aide automatique pour créer un métier (mots-clés et domaine suggérés d’après le nom, ton CV ou une annonce collée)'] },
+  { v: '1.8.3', d: '02/11/2026', l: ['Guide : nouvelle rubrique « Onglet Offre » avec le fonctionnement détaillé (calcul des pourcentages, analyse d’annonce, version adaptée, suivi)', 'Onglet Offre : bouton « Comment ça marche ? » en haut'] },
   { v: '1.8.2', d: '01/11/2026', l: ['Agenda : bouton « Copier le code » pour envoyer les rendez-vous directement dans l’appli AgenDam (sans passer par le navigateur)', 'Rendez-vous envoyés plus complets : statut, lien de l’offre, entreprise, notes'] },
   { v: '1.8.1', d: '01/11/2026', l: ['Onglets du côté : largeur fixe, le texte est enfin visible en entier sur iPad', 'Téléphone en mode paysage : même disposition que l’iPad (options à gauche, CV à droite, barre du milieu réglable)'] },
   { v: '1.8.0', d: '01/11/2026', l: ['Offre : « Métiers qui te correspondent » — une centaine de métiers classés selon ton CV (aéronautique très détaillé), avec les mots-clés qui collent et ceux à acquérir, et un bouton pour créer un CV adapté', 'Réglages > Métiers : choisis un ou plusieurs domaines, masque des métiers, ajoute les tiens', 'iPad : les onglets ne cachent plus le CV (colonne dédiée à droite) et la barre du milieu se glisse de gauche à droite pour régler la taille', 'Onglets verticaux compatibles avec les anciens iPad et iPhone', 'Suivi : date, heure, durée et lieu des entretiens', 'Suivi > 📅 Agenda : envoi des entretiens et relances vers AgenDam par un lien, ou en fichier .ics pour Apple, Outlook, Google'] },
@@ -362,6 +364,14 @@ function adaptCV(cv, res, o) {
 /* ============ guide ============ */
 const VERBES = ['Piloté', 'Dirigé', 'Coordonné', 'Conçu', 'Développé', 'Optimisé', 'Réduit', 'Augmenté', 'Négocié', 'Formé', 'Déployé', 'Structuré', 'Animé', 'Lancé', 'Analysé', 'Automatisé', 'Fidélisé', 'Rédigé', 'Organisé', 'Réalisé'];
 const GUIDE = [
+  { c: 'offre', t: 'L’onglet Offre : vue d’ensemble', p: 'Cet onglet t’aide à trouver des postes, à comparer une annonce avec ton CV et à préparer une candidature. Tout est calculé sur ton appareil : ton CV et les annonces ne sont envoyés nulle part. L’appli ne se connecte pas aux sites d’emploi : tu ouvres l’annonce toi-même, puis tu la colles ici.', l: ['1. Métiers qui te correspondent : des idées de métiers classées d’après ton CV', '2. Trouver des offres : un site d’emploi s’ouvre avec ta recherche déjà remplie', '3. Adapter son CV à une annonce : tu colles l’annonce, l’appli la compare à ton CV', '4. Créer une version adaptée du CV, puis ajouter la candidature au Suivi'] },
+  { c: 'offre', t: 'Métiers qui te correspondent', p: 'L’appli connaît une liste de métiers, chacun avec ses mots-clés typiques. Elle cherche ces mots dans tout ton CV : titre, profil, domaines, expériences, formations, compétences, langues et loisirs.', l: ['Un métier n’apparaît que si au moins 2 de ses mots-clés sont trouvés dans ton CV', 'Plus ton CV est détaillé, plus le classement est juste : un CV vide ne donne presque rien', 'Le CV utilisé est indiqué en haut de la carte (le premier de ta liste)', 'Dans Réglages > Métiers, choisis un ou plusieurs domaines : les métiers de ces domaines passent devant', '« Montrer uniquement ces domaines » masque tous les autres métiers'] },
+  { c: 'offre', t: 'Lire les pourcentages', p: 'Le pourcentage mesure la part des mots-clés du métier que l’on retrouve dans ton CV. 100 % veut dire « ton CV parle déjà de tout ce qui caractérise ce métier », pas « tu seras embauché ».', l: ['Dans ton CV : les mots-clés du métier déjà présents chez toi', 'À mettre en avant ou acquérir : les mots-clés absents. Si tu maîtrises le sujet, ajoute-les à ton CV ; sinon, c’est une piste de formation', 'Les domaines choisis donnent un petit bonus (+15 %), les autres une petite réduction (−20 %)', 'Un score moyen n’est pas un mauvais signe : il peut simplement montrer que ton CV n’emploie pas les mêmes mots que le métier'] },
+  { c: 'offre', t: 'Les boutons d’un métier', l: ['Chercher des offres : met le métier dans la recherche « Trouver des offres » juste en dessous', 'CV pour ce métier : crée une copie de ton CV avec ce métier en titre, à compléter (profil, compétences)', '✕ : masque ce métier de la liste', 'Choisir les domaines : ouvre Réglages > Métiers'] },
+  { c: 'offre', t: 'Trouver des offres', p: 'Choisis un métier et une ville : tu touches un site (France Travail, Indeed…) et il s’ouvre avec ta recherche déjà faite.', l: ['« Gérer les sites » : ajoute tes sites favoris ou retire ceux dont tu ne te sers pas', 'Ouvre l’annonce qui t’intéresse et copie tout son texte', 'Reviens dans l’appli : « Coller l’annonce » remplit la zone de texte avec ce que tu as copié', 'Si le collage automatique ne marche pas, maintiens le doigt dans la zone et choisis « Coller »'] },
+  { c: 'offre', t: 'Analyser une annonce', p: 'Avec « Analyser », l’appli relève les 28 mots-clés les plus importants de l’annonce (ceux qui reviennent le plus souvent, hors mots courants) et regarde lesquels sont dans le CV choisi.', l: ['Le pourcentage = part des mots-clés de l’annonce présents dans ton CV (un mot répété compte plus, jusqu’à 4 fois)', 'Déjà présents : à garder en évidence', 'Absents de ton CV : touche un mot pour l’ajouter aux compétences', 'N’ajoute un mot que si tu maîtrises vraiment le sujet : tu devras en parler en entretien', 'Choisis bien le CV à comparer : le score change d’un CV à l’autre', 'Ce score est une aide, pas un verdict : lis aussi l’annonce toi-même (expérience demandée, lieu, contrat)'] },
+  { c: 'offre', t: 'Créer une version adaptée', p: 'Le bouton copie ton CV et remonte en premier ce qui répond à l’annonce. Ton CV d’origine n’est jamais modifié.', l: ['Les compétences qui correspondent à l’annonce passent en tête', 'Dans chaque expérience, les puces qui parlent de l’annonce passent en premier', '« Masquer les compétences sans rapport » : cache celles qui ne servent pas (seulement si ton CV en a plus de 10 et qu’au moins 5 correspondent). Tu peux les réafficher ensuite', '« Mettre le poste visé en titre » : le titre du CV devient le poste que tu as saisi', 'Le CV créé porte le nom de l’entreprise ou du poste : retrouve-le dans Mes CV et relis-le avant l’envoi'] },
+  { c: 'offre', t: 'Après : le suivi des candidatures', p: '« Ajouter au suivi » enregistre la candidature (poste, entreprise, CV utilisé, texte de l’annonce) dans l’onglet Suivi.', l: ['Suivi : statut (à envoyer, envoyée, entretien, offre, refus), date d’envoi, date de relance, notes', 'Les relances dépassées ou du jour sont signalées', 'Ajoute la date, l’heure et le lieu d’un entretien dans la fiche : il apparaît dans Agenda', 'Agenda : « Copier le code pour AgenDam » envoie les rendez-vous vers ton appli AgenDam, ou exporte un fichier .ics (Apple, Google, Outlook)'] },
   { c: 'essentiel', t: 'La règle des 6 secondes', p: 'Un recruteur survole d’abord ton CV très vite. Il doit comprendre en un coup d’œil qui tu es et ce que tu apportes.', l: ['1 page si tu as moins de 10 ans d’expérience, 2 pages maximum', 'Ordre antichronologique : le plus récent en premier', 'Une idée par ligne, pas de pavés', 'Un CV adapté par type de poste visé'] },
   { c: 'essentiel', t: 'Structure idéale', l: ['En-tête : nom, titre, contacts', 'Profil : 2–3 lignes', 'Expériences professionnelles', 'Formation', 'Compétences et langues', 'Centres d’intérêt (court, optionnel)'] },
   { c: 'infos', t: 'L’en-tête', l: ['Nom en grand, puis le titre du poste visé', 'Téléphone, email sérieux (prenom.nom@…), ville', 'Lien LinkedIn à jour si tu en as un', 'Photo facultative en France : sobre, fond neutre, bien cadrée', 'Inutile : âge, situation familiale, nationalité, adresse complète'] },
@@ -396,7 +406,7 @@ const GUIDE = [
   { c: 'candidature', t: 'Adapter son CV à chaque offre', l: ['Relis l’annonce et repère 5 à 8 mots-clés', 'Remonte les compétences et puces qui y répondent', 'Adapte le titre sous ton nom au poste visé', 'L’onglet Offre fait ce travail : colle l’annonce, regarde le score, crée une version'] },
   { c: 'candidature', t: 'Relancer', l: ['Compte 7 à 10 jours après l’envoi', 'Message court, poli, qui rappelle le poste visé', 'Note la date de relance dans l’onglet Suivi'] },
 ];
-const GCATS = [['essentiel', 'Essentiel'], ['infos', 'En-tête'], ['profil', 'Profil'], ['exp', 'Expériences'], ['formation', 'Formation'], ['comp', 'Compétences'], ['plus', 'Langues, loisirs'], ['forme', 'Mise en page'], ['cas', 'Situations'], ['ats', 'Filtres ATS'], ['erreurs', 'Erreurs'], ['candidature', 'Candidature'], ['lettre', 'Lettre, mail'], ['entretien', 'Entretien'], ['web', 'LinkedIn, web']];
+const GCATS = [['essentiel', 'Essentiel'], ['offre', 'Onglet Offre'], ['infos', 'En-tête'], ['profil', 'Profil'], ['exp', 'Expériences'], ['formation', 'Formation'], ['comp', 'Compétences'], ['plus', 'Langues, loisirs'], ['forme', 'Mise en page'], ['cas', 'Situations'], ['ats', 'Filtres ATS'], ['erreurs', 'Erreurs'], ['candidature', 'Candidature'], ['lettre', 'Lettre, mail'], ['entretien', 'Entretien'], ['web', 'LinkedIn, web']];
 const CHECKLIST = ['Lettre ou mail personnalisé pour cette entreprise', 'Orthographe relue (et relue par quelqu’un d’autre)', 'Titre adapté au poste visé', 'Chiffres dans les expériences récentes', 'Mots-clés de l’offre présents', 'Email et téléphone corrects', '1 page (2 maximum)', 'PDF lisible, texte sélectionnable', 'Nom du fichier : Prenom_Nom_CV.pdf'];
 
 /* ============ interface ============ */
@@ -575,7 +585,7 @@ function tabOffre() {
   if (!so.q && !so.init) { so.init = 1; so.q = cv0?.data.identity.titre || ''; so.l = cv0?.data.identity.ville || ''; }
   const mj = matchJobs(cv0), nShow = ui.mjAll ? 20 : 8, dn = (S.set.doms || []).map(k => (DOMS.find(x => x[0] === k) || [, ''])[1]).filter(Boolean);
   return `<div class="wrap"><div class="top"><span class="app">Offre</span></div>
-  <div class="card"><h2>Métiers qui te correspondent</h2><div class="small muted">Classés d’après le CV « ${esc(cv0?.name || '')} ». ${dn.length ? 'Domaines choisis : ' + esc(dn.join(', ')) + '.' : 'Aucun domaine choisi : tous les métiers sont classés.'} <button class="btn sm ghost" data-act="gomet" style="margin-top:6px">Choisir les domaines</button></div>
+  <div class="card"><div class="rowline" style="justify-content:space-between"><h2>Métiers qui te correspondent</h2><button class="btn sm ghost" data-act="offhelp">Comment ça marche ?</button></div><div class="small muted">Classés d’après le CV « ${esc(cv0?.name || '')} ». ${dn.length ? 'Domaines choisis : ' + esc(dn.join(', ')) + '.' : 'Aucun domaine choisi : tous les métiers sont classés.'} <button class="btn sm ghost" data-act="gomet" style="margin-top:6px">Choisir les domaines</button></div>
    ${mj.length ? mj.slice(0, nShow).map(m => `<div class="mj"><div class="l1"><b>${esc(m.n)}</b><span class="chip ${m.pct >= 70 ? 'ok' : ''}">${m.pct} %</span></div>
     <div class="bar"><i style="width:${m.pct}%"></i></div>
     <div class="small"><span class="muted">Dans ton CV :</span> ${m.ok.slice(0, 6).map(esc).join(', ')}</div>${m.ko.length ? `<div class="small muted">À mettre en avant ou acquérir : ${m.ko.slice(0, 4).map(esc).join(', ')}</div>` : ''}
@@ -650,7 +660,8 @@ function tabRegl() {
   if (t === 'met') { const doms = S.set.doms || [], mj = ui.mj || (ui.mj = { n: '', k: '', d: '' }); body = `<div class="card"><h2>Mes domaines</h2><div class="small muted">Choisis un ou plusieurs domaines : les métiers de ces domaines passent devant dans l’onglet Offre.</div>
     <div class="chips">${DOMS.map(([k, n]) => `<button class="${doms.includes(k) ? 'on' : ''}" data-act="domtoggle" data-v="${k}">${doms.includes(k) ? '✓ ' : ''}${esc(n)}</button>`).join('')}</div>
     <button class="btn sm ${S.set.onlyDoms ? '' : 'ghost'}" data-act="onlydoms">${S.set.onlyDoms ? '☑' : '☐'} Montrer uniquement ces domaines</button></div>
-   <div class="card"><h2>Ajouter un métier</h2><div class="small muted">Donne un nom et des mots-clés (séparés par des virgules) : il sera classé comme les autres.</div>
+   <div class="card"><h2>Ajouter un métier</h2><div class="small muted">Donne un nom et des mots-clés (séparés par des virgules) : il sera classé comme les autres. Ou laisse l’appli te proposer le tout, puis corrige.</div>
+    <div class="chips"><button class="btn sm ghost" data-act="mjsug" data-v="name">✨ D’après le nom</button><button class="btn sm ghost" data-act="mjsug" data-v="cv">✨ D’après mon CV</button><button class="btn sm ghost" data-act="mjsug" data-v="offre">✨ D’après l’annonce collée</button></div>
     <label class="f">Nom du métier<input data-u="mj.n" value="${esc(mj.n)}" placeholder="Ex. Responsable maintenance hélicoptères"></label>
     <label class="f">Mots-clés<textarea data-u="mj.k" rows="2" placeholder="maintenance, helicoptere, hangar, encadrement…">${esc(mj.k)}</textarea></label>
     <label class="f">Domaine<select data-u="mj.d"><option value="">—</option>${DOMS.map(([k, n]) => `<option value="${k}" ${mj.d === k ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
@@ -990,6 +1001,34 @@ const METIERS = [
   ['Conseiller voyages', 'hotel', 'voyages,tourisme,reservation,client,conseil,billetterie,sejours,vente,gds'],
 ];
 const getJobs = () => METIERS.concat((S.set.myJobs || []).map(j => [j.n, j.d || '', j.k])).filter(m => !(S.set.hideJobs || []).includes(m[0]));
+function suggestJob(src, mj) {
+  const cv = S.cvs.find(c => c.id === ui.offre.cvId) || S.cvs[0], tok = t => kwTokens(t).map(w => w.replace(/(s|x)$/, w.length > 4 ? '' : '$&'));
+  const top = (freq, n) => [...freq.entries()].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0])).slice(0, n).map(x => x[0]);
+  const add = (m, w, p) => m.set(w, (m.get(w) || 0) + p);
+  const all = getJobs(), res = { n: '', k: [], d: '' };
+  const shown = new Map();
+  if (src === 'name') {
+    const nt = new Set(tok(mj.n || ''));
+    if (!nt.size) return null;
+    const sc = all.map(([n, d, k]) => { const ks = String(k).split(',').map(x => norm(x).trim()), jt = new Set([...tok(n), ...ks.flatMap(x => tok(x))]); let s = 0; nt.forEach(w => { if (jt.has(w)) s++; }); return { n, d, ks, s }; }).filter(x => x.s > 0).sort((x, y) => y.s - x.s).slice(0, 3);
+    const f = new Map(), dm = new Map(); sc.forEach(x => { x.ks.forEach(k => add(f, k, 1 + x.s)); if (x.d) add(dm, x.d, x.s); });
+    nt.forEach(w => add(f, w, 6));
+    res.k = top(f, 12); res.d = top(dm, 1)[0] || '';
+  } else if (src === 'cv') {
+    if (!cv) return null;
+    const d = cv.data, f = new Map(), put = (t, p) => kwTokens(t).forEach(w => { const s = stem(w); if (!shown.has(s) || w.length < shown.get(s).length) shown.set(s, w); add(f, s, p); });
+    put(d.identity.titre, 3); put(d.resume, 1); put(d.domaines, 2); act(d.competences).forEach(c => put(c.nom, 3));
+    act(d.experiences).forEach(e => { put(e.poste, 3); put(e.desc, 1); }); act(d.formations).forEach(x => put(x.diplome, 2));
+    res.k = top(f, 12).map(s => shown.get(s) || s); const m = matchJobs(cv), dm = new Map(); m.slice(0, 6).forEach(x => x.dm && add(dm, x.dm, x.pct)); res.d = top(dm, 1)[0] || '';
+    res.n = d.identity.titre || '';
+  } else {
+    const t = ui.offre.text || ''; if (!t.trim()) return null;
+    const r = analyzeOffer(t, cv || { data: { identity: {}, experiences: [], formations: [], competences: [], langues: [] } });
+    res.k = r.ok.concat(r.miss).slice(0, 12); res.n = ui.offre.poste || '';
+    const f = new Set(res.k.map(norm)), dm = new Map(); all.forEach(([n, d, k]) => { if (!d) return; let s = 0; String(k).split(',').forEach(x => { if (f.has(norm(x).trim())) s++; }); if (s) add(dm, d, s); }); res.d = top(dm, 1)[0] || '';
+  }
+  return res.k.length ? res : null;
+}
 function matchJobs(cv) {
   const d = cv.data, txt = ' ' + norm([d.identity.titre, d.resume, d.domaines, d.loisirs, d.extra, ...act(d.experiences).flatMap(e => [e.poste, e.entreprise, e.desc]), ...act(d.formations).flatMap(f => [f.diplome, f.ecole, f.desc]), ...act(d.competences).map(c => c.nom), ...act(d.langues).map(l => l.nom), ...act(d.certifs).map(c => c.nom)].join(' ')) + ' ';
   const doms = S.set.doms || [], only = !!S.set.onlyDoms && doms.length;
@@ -1247,6 +1286,7 @@ const ACT = {
   clreset: () => { S.checks = {}; save(); render(); },
   stab: v => { ui.stab = v; render(); },
   demo: () => demoOn(),
+  offhelp: () => { ui.tab = 'guide'; ui.gcat = 'offre'; render(); scrollTo(0, 0); },
   gomet: () => { ui.tab = 'regl'; ui.stab = 'met'; render(); scrollTo(0, 0); },
   mjmore: () => { ui.mjAll = !ui.mjAll; render(); },
   mjsearch: v => { ui.so.q = v.split(' (')[0].split(' ou ')[0]; ui.so.init = 1; render(); document.getElementById('sojobs')?.scrollIntoView({ behavior: 'smooth' }); toast('Choisis un site ci-dessous'); },
@@ -1255,6 +1295,9 @@ const ACT = {
   mjunhide: v => { S.set.hideJobs = (S.set.hideJobs || []).filter(x => x !== v); save(); render(); },
   domtoggle: v => { const d = S.set.doms || (S.set.doms = []); const i = d.indexOf(v); if (i >= 0) d.splice(i, 1); else d.push(v); save(); render(); },
   onlydoms: () => { S.set.onlyDoms = !S.set.onlyDoms; save(); render(); },
+  mjsug: v => { const m = ui.mj || (ui.mj = { n: '', k: '', d: '' }), r = suggestJob(v, m);
+    if (!r) { toast(v === 'offre' ? 'Colle d’abord une annonce dans l’onglet Offre' : v === 'name' ? 'Écris d’abord un nom de métier' : 'Pas assez de texte dans ton CV', 4000); return; }
+    m.k = r.k.join(', '); if (!m.n && r.n) m.n = r.n; if (r.d) m.d = r.d; toast('Suggestions ajoutées : relis, corrige, puis « Ajouter »', 4500); render(); },
   mjadd: () => { const m = ui.mj || {}; if (!(m.n || '').trim() || !(m.k || '').trim()) { toast('Indique un nom et des mots-clés'); return; } (S.set.myJobs || (S.set.myJobs = [])).push({ n: m.n.trim(), d: m.d || '', k: m.k.split(/[,;\n]/).map(x => x.trim()).filter(Boolean).join(',') }); ui.mj = { n: '', k: '', d: '' }; save(); render(); toast('Métier ajouté'); },
   mjdel: v => { S.set.myJobs = (S.set.myJobs || []).filter(x => x.n !== v); save(); render(); },
   agenda: () => agendaSheet(),
