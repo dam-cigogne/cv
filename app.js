@@ -15,15 +15,17 @@ function setPath(o, path, v) {
 }
 
 const TPLS = [['classique', 'Classique'], ['moderne', 'Moderne'], ['bandeau', 'Bandeau'], ['chrono', 'Chronologie'], ['elegant', 'Élégant']];
-const ACCENTS = ['#1F5BD8', '#0E6B5C', '#7A3FB5', '#C2410C', '#B3372B', '#222B45', '#0F7C9D', '#8A6A12'];
+const ACCENTS = ['#1F5BD8', '#0E6B5C', '#7A3FB5', '#C2410C', '#B3372B', '#222B45', '#0F7C9D', '#8A6A12', '#2563EB', '#0891B2', '#059669', '#65A30D', '#CA8A04', '#EA580C', '#DC2626', '#DB2777', '#9333EA', '#4F46E5', '#475569', '#111111'];
+const SHORT = { resume: 'Profil', domaines: 'Domaines', experiences: 'Expériences', formations: 'Formations', competences: 'Compétences', langues: 'Langues', certifs: 'Certifications', loisirs: 'Loisirs' };
 const SECS = { resume: 'Profil', domaines: 'Domaines de compétences', experiences: 'Expériences professionnelles', formations: 'Formation', competences: 'Compétences', langues: 'Langues', certifs: 'Certifications', loisirs: 'Centres d’intérêt' };
 const SIDE = ['competences', 'langues', 'loisirs'];
 const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretien', 'Entretien'], ['offre', 'Offre reçue'], ['refus', 'Refus']];
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 const CHANGELOG = [
+  { v: '1.4.0', d: '01/11/2026', l: ['Écran partagé : le vrai CV à côté (ou au-dessus) des options, mis à jour en direct, poignée pour redimensionner', 'Mise en page : rubriques à déplacer par appui long, colonne principale ou latérale, taille par rubrique, deux colonnes sur tous les modèles', 'Option « Une seule page » : le texte se règle tout seul', 'Bouton ✨ Auto : choisit le meilleur modèle et la meilleure mise en page (annulable)', '20 couleurs de CV + couleur libre', 'Recadrage de la photo : appui long puis glisser pour la déplacer, curseur de zoom'] },
   { v: '1.3.0', d: '01/11/2026', l: ['Onglets verticaux sur le bord droit (comme Comptes en ligne) partout : Réglages, éditeur, Suivi, Guide', 'Mode « Sur le côté » activé par défaut'] },
   { v: '1.2.0', d: '01/11/2026', l: ['Version de l’appli et liste des mises à jour dans Réglages', 'Bouton « Vérifier les mises à jour »'] },
   { v: '1.1.0', d: '01/11/2026', l: ['Import PDF amélioré : nom sur plusieurs lignes, titre dans la colonne de droite, ville après le code postal, puces détectées par l’indentation, formations en liste, « Informations complémentaires » classées', 'Nouvelle rubrique « Domaines de compétences » (sous-titres et puces)', 'Mise à jour automatique : l’appli prend toujours la dernière version quand le réseau est là, et reste utilisable hors connexion'] },
@@ -48,7 +50,7 @@ const KEY = 'cvpoche.v1';
 const defaults = () => ({ cvs: [], jobs: [], checks: {}, set: { theme: 'auto', accent: '#1F5BD8', size: 'normal', filt: 'side', tpl: 'classique', cvAccent: '#1F5BD8', font: 'sans' } });
 let S = (() => { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.cvs) { const d = defaults(); return { ...d, ...s, set: { ...d.set, ...(s.set || {}) } }; } } catch { } return defaults(); })();
 if (!S.set.sideV13) { S.set.sideV13 = 1; S.set.filt = 'side'; }
-S.cvs.forEach(cv => { if (!cv.order.includes('domaines')) cv.order.splice(Math.max(0, cv.order.indexOf('resume')) + 1, 0, 'domaines'); if (cv.data.domaines == null) cv.data.domaines = ''; });
+S.cvs.forEach(cv => { cv.col = cv.col || {}; cv.sz = cv.sz || {}; if (!cv.order.includes('domaines')) cv.order.splice(Math.max(0, cv.order.indexOf('resume')) + 1, 0, 'domaines'); if (cv.data.domaines == null) cv.data.domaines = ''; });
 let saveT;
 function save() { clearTimeout(saveT); saveT = setTimeout(saveNow, 300); }
 function saveNow() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('Stockage plein : exporte tes données (Réglages)'); } }
@@ -56,13 +58,14 @@ addEventListener('pagehide', saveNow);
 document.addEventListener('visibilitychange', () => { if (document.hidden) saveNow(); });
 
 const ui = { tab: 'cv', ed: null, edTab: 'infos', open: {}, jobFilter: 'all', gcat: 'essentiel', stab: 'app', offre: { text: '', cvId: '', entreprise: '', poste: '', res: null, mask: true, settitle: false }, prevZoom: 1, jd: null, imp: null, sheet: null };
+ui.lh = 42; ui.lz = 1;
 const curCV = () => S.cvs.find(c => c.id === ui.ed);
 const touch = cv => { cv.updated = Date.now(); save(); };
 
 function newCV(name, data) {
   return {
     id: uid(), name: name || 'Mon CV', created: Date.now(), updated: Date.now(),
-    tpl: S.set.tpl, accent: S.set.cvAccent, font: S.set.font, scale: 1, photo: true,
+    tpl: S.set.tpl, accent: S.set.cvAccent, font: S.set.font, scale: 1, photo: true, one: false, cols: false, col: {}, sz: {},
     order: ['resume', 'domaines', 'experiences', 'formations', 'competences', 'langues', 'certifs', 'loisirs'], show: {},
     data: data || { identity: { nom: '', titre: '', email: '', tel: '', ville: '', adresse: '', site: '', linkedin: '', permis: '', naissance: '', photo: '' }, resume: '', domaines: '', experiences: [], formations: [], competences: [], langues: [], certifs: [], loisirs: '', extra: '' },
   };
@@ -88,6 +91,9 @@ function sampleData() {
   d.formations = [{ id: uid(), on: true, diplome: 'Master Communication et médias numériques', ecole: 'Université Lyon 2', debut: '2017', fin: '2019', desc: '' }];
   d.competences = ['Stratégie éditoriale', 'Réseaux sociaux', 'Emailing', 'Canva', 'Suite Adobe', 'Google Analytics', 'Rédaction web'].map(n => ({ id: uid(), on: true, nom: n, niveau: 0 }));
   d.langues = [{ id: uid(), on: true, nom: 'Anglais', niveau: 'Courant (C1)' }, { id: uid(), on: true, nom: 'Espagnol', niveau: 'Intermédiaire' }];
+  d.domaines = '## Communication\n- Plan éditorial et calendrier de publication\n- Gestion de communauté\n## Outils\n- Suite Adobe, Canva, Google Analytics';
+  d.certifs = [{ id: uid(), on: true, nom: 'Certification Google Analytics', annee: '2022' }];
+  d.experiences.push({ id: uid(), on: true, poste: 'Stagiaire communication', entreprise: 'Office du tourisme', lieu: 'Annecy', debut: '2018', fin: '2018', actuel: false, desc: '- Animation des réseaux sociaux\n- Reportages photo' });
   d.loisirs = 'Photographie, randonnée, théâtre d’improvisation';
   return d;
 }
@@ -143,13 +149,20 @@ function contacts(cv) {
 }
 const photoHtml = cv => (cv.photo !== false && cv.data.identity.photo) ? `<div class="ph" style="background-image:url('${cv.data.identity.photo}')"></div>` : '';
 
-function buildParts(cv) {
-  const i = cv.data.identity, side = cv.tpl === 'moderne';
+const isMod = cv => cv.tpl === 'moderne';
+const twoCol = cv => isMod(cv) || !!cv.cols;
+const colOf = (cv, k) => twoCol(cv) ? ((cv.col && cv.col[k]) || (SIDE.includes(k) ? 'side' : 'main')) : 'main';
+const szOf = (cv, k) => (cv.sz && cv.sz[k]) || 1;
+
+function buildParts(cv, sc) {
+  sc = sc || cv.scale || 1;
+  const i = cv.data.identity, mod = isMod(cv);
   const ct = contacts(cv);
+  const bs = k => { const z = szOf(cv, k); return z !== 1 ? ` style="--s:${(sc * z).toFixed(3)}"` : ''; };
   const nameBlock = `<h1 class="nm">${esc(i.nom || 'Prénom Nom')}</h1>${i.titre ? `<div class="ti">${esc(i.titre)}</div>` : ''}`;
   let head;
   const ctRow = `<div class="ct">${ct.map(c => `<span>${esc(c)}</span>`).join('')}</div>`;
-  if (side) head = `<div class="blk">${nameBlock}</div>`;
+  if (mod) head = `<div class="blk">${nameBlock}</div>`;
   else if (cv.tpl === 'bandeau') head = `<div class="blk"><div class="band">${photoHtml(cv)}<div>${nameBlock}${ctRow}</div></div></div>`;
   else if (cv.tpl === 'elegant') head = `<div class="blk"><div class="hd">${photoHtml(cv)}${nameBlock}${ctRow}</div></div>`;
   else head = `<div class="blk"><div class="hd">${photoHtml(cv)}<div>${nameBlock}${ctRow}</div></div></div>`;
@@ -159,29 +172,31 @@ function buildParts(cv) {
   for (const k of cv.order) {
     if (cv.show[k] === false) continue;
     const title = `<div class="st">${esc(SECS[k])}</div>`;
-    if (side && SIDE.includes(k)) { const s = secSimple(cv, k); if (s) sideHtml.push(`<div class="blk">${title}${s}</div>`); continue; }
+    if (colOf(cv, k) === 'side') {
+      const s = (k === 'experiences' || k === 'formations') ? secItems(cv, k).join('') : k === 'domaines' ? domGroups(cv).join('') : secSimple(cv, k);
+      if (s) sideHtml.push(`<div class="blk"${bs(k)}>${title}${s}</div>`);
+      continue;
+    }
     if (k === 'experiences' || k === 'formations' || k === 'domaines') {
       const its = k === 'domaines' ? domGroups(cv) : secItems(cv, k); if (!its.length) continue;
-      blocks.push(`<div class="blk">${title}${its[0]}</div>`);
-      for (let n = 1; n < its.length; n++) blocks.push(`<div class="blk">${its[n]}</div>`);
-    } else { const s = secSimple(cv, k); if (s) blocks.push(`<div class="blk">${title}${s}</div>`); }
+      blocks.push(`<div class="blk"${bs(k)}>${title}${its[0]}</div>`);
+      for (let n = 1; n < its.length; n++) blocks.push(`<div class="blk"${bs(k)}>${its[n]}</div>`);
+    } else { const s = secSimple(cv, k); if (s) blocks.push(`<div class="blk"${bs(k)}>${title}${s}</div>`); }
   }
   let sb = null;
-  if (side) {
+  if (mod) {
     const cts = `<div class="blk"><div class="st">Contact</div><div class="cts">${ct.map(c => `<div>${esc(c)}</div>`).join('')}</div></div>`;
     sb = photoHtml(cv) + (ct.length ? cts : '') + sideHtml.join('');
-  }
+  } else if (cv.cols && sideHtml.length) sb = sideHtml.join('');
   return { blocks, sb };
 }
 
 let measureEl;
 const memo = new Map();
-function renderPages(cv, nocache) {
-  const key = cv.id + ':' + cv.updated + ':' + cv.tpl;
-  if (!nocache && memo.has(key)) return memo.get(key);
-  const { blocks, sb } = buildParts(cv);
-  const cls = `pg t-${cv.tpl}${cv.font === 'serif' ? ' serif' : ''}`;
-  const style = `--a:${cv.accent};--s:${cv.scale || 1}`;
+function buildPages(cv, sc, tight) {
+  const { blocks, sb } = buildParts(cv, sc), mod = isMod(cv);
+  const cls = `pg t-${cv.tpl}${cv.font === 'serif' ? ' serif' : ''}${tight ? ' tight' : ''}${sb != null && !mod ? ' lt' : ''}`;
+  const style = `--a:${cv.accent};--s:${sc}`;
   if (!measureEl) { measureEl = document.createElement('div'); measureEl.className = 'measure'; document.body.appendChild(measureEl); }
   measureEl.innerHTML = `<div class="${cls}" style="${style}">${sb != null ? '<aside class="sb"></aside>' : ''}<main class="mn"></main></div>`;
   const mn = measureEl.querySelector('main'), cs = getComputedStyle(mn);
@@ -203,9 +218,25 @@ function renderPages(cv, nocache) {
     cur.push(b); used += h;
   });
   groups.push(cur);
-  const pages = groups.map((g, n) => `<div class="${cls}" style="${style}">${sb != null ? `<aside class="sb">${n === 0 ? sb : ''}</aside>` : ''}<main class="mn">${g.join('')}</main></div>`);
+  const pages = groups.map((g, n) => `<div class="${cls}" style="${style}">${sb != null && (mod || n === 0) ? `<aside class="sb">${n === 0 ? sb : ''}</aside>` : ''}<main class="mn">${g.join('')}</main></div>`);
   measureEl.innerHTML = '';
-  const res = { pages, over };
+  return { pages, over };
+}
+function renderPages(cv, nocache) {
+  const key = [cv.id, cv.updated, cv.tpl, cv.one ? 1 : 0, cv.cols ? 1 : 0].join(':');
+  if (!nocache && memo.has(key)) return memo.get(key);
+  const base = cv.scale || 1; let res;
+  if (!cv.one) res = { ...buildPages(cv, base, false), sc: base, fit: true };
+  else {
+    const tries = [];
+    for (let s = base; s >= 0.84; s -= 0.02) tries.push([Math.round(s * 100) / 100, false]);
+    for (let s = Math.min(base, 0.92); s >= 0.7; s -= 0.02) tries.push([Math.round(s * 100) / 100, true]);
+    for (const [s, t] of tries) {
+      res = { ...buildPages(cv, s, t), sc: s, tight: t };
+      res.fit = res.pages.length === 1 && !res.over;
+      if (res.fit) break;
+    }
+  }
   if (!nocache) { memo.set(key, res); if (memo.size > 40) memo.delete(memo.keys().next().value); }
   return res;
 }
@@ -351,10 +382,14 @@ function renderNav() {
   nav.innerHTML = `<div class="in">${TABS.map(([k, l]) => `<button class="${ui.tab === k ? 'on' : ''}" data-act="nav" data-v="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]}</svg>${l}</button>`).join('')}</div>`;
 }
 function render() {
-  const y = window.scrollY;
+  const y = window.scrollY, fs = $('.edform')?.scrollTop || 0, ls = $('#lps')?.scrollTop || 0;
   renderNav();
   app.innerHTML = ui.ed && curCV() ? viewEditor(curCV()) : ({ cv: tabCV, offre: tabOffre, suivi: tabSuivi, guide: tabGuide, regl: tabRegl }[ui.tab])();
   window.scrollTo(0, y);
+  if (ui.ed && curCV()) {
+    const f = $('.edform'); if (f && !ui.resetForm) f.scrollTop = fs; ui.resetForm = 0;
+    updLive(); const l = $('#lps'); if (l) l.scrollTop = ls;
+  }
 }
 function toast(m) {
   let t = $('#toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
@@ -391,12 +426,14 @@ function cvCard(cv) {
 const ET = [['infos', 'Infos'], ['parcours', 'Parcours'], ['formation', 'Formation'], ['comp', 'Compétences'], ['plus', 'Plus'], ['style', 'Style'], ['controle', 'Contrôle']];
 function viewEditor(cv) {
   const body = { infos: edInfos, parcours: edParcours, formation: edFormation, comp: edComp, plus: edPlus, style: edStyle, controle: edControle }[ui.edTab](cv);
-  return `<div class="wrap">
+  const undo = ui.undo && ui.undo.id === cv.id;
+  return `<div class="edsplit" style="--lh:${ui.lh}vh">
    <div class="edhead"><div class="edtitle"><button class="ib" data-act="back" aria-label="Retour">←</button><input data-p="name" value="${esc(cv.name)}" aria-label="Nom du CV"><button class="ib" data-act="cvmenu" data-id="${cv.id}" aria-label="Plus">⋯</button></div>
    <div class="scrollx vt">${ET.map(([k, l]) => `<button class="${ui.edTab === k ? 'on' : ''}" data-act="edtab" data-v="${k}">${l}</button>`).join('')}</div></div>
-   ${cv.review ? `<div class="banner"><span>CV importé : vérifie chaque rubrique, la lecture automatique peut se tromper. Le texte non classé est dans « Plus ».</span><button class="btn sm ghost" data-act="dismiss">OK</button></div>` : ''}
-   ${body}</div>
-   <div class="edbar"><div class="in"><button class="btn" data-act="prev" data-id="${cv.id}">Aperçu et PDF</button></div></div>`;
+   <div class="livepane"><div class="lp-bar"><span id="lpinfo"></span><span class="lpb"><button class="btn sm" data-act="auto">✨ Auto</button>${undo ? '<button class="btn sm ghost" data-act="undoauto">↶ Annuler</button>' : ''}<button class="ib sm" data-act="lzoom" data-d="-1" aria-label="Réduire">−</button><button class="ib sm" data-act="lzoom" data-d="1" aria-label="Agrandir">+</button><button class="ib sm" data-act="prev" data-id="${cv.id}" aria-label="Plein écran">⤢</button></span></div><div class="lp-s" id="lps"></div></div>
+   <div class="handle" aria-label="Redimensionner"><i></i></div>
+   <div class="edform">${cv.review ? `<div class="banner"><span>CV importé : vérifie chaque rubrique, la lecture automatique peut se tromper. Le texte non classé est dans « Plus ».</span><button class="btn sm ghost" data-act="dismiss">OK</button></div>` : ''}${body}</div></div>
+   <div class="edbar"><div class="in"><button class="btn" data-act="prev" data-id="${cv.id}">Plein écran et PDF</button></div></div>`;
 }
 const fld = (cv, label, path, ph = '', type = 'text') => `<label class="f">${label}<input type="${type}" data-p="${path}" value="${esc(path.split('.').reduce((o, k) => o?.[k], cv))}" placeholder="${esc(ph)}" autocomplete="off"></label>`;
 function edInfos(cv) {
@@ -455,14 +492,30 @@ function edPlus(cv) {
   return `<div class="card"><h2>Centres d’intérêt</h2><div class="small muted">Court et concret : 3 à 5 éléments.</div><label class="f"><textarea data-p="data.loisirs" rows="3">${esc(cv.data.loisirs)}</textarea></label></div>
   <div class="card"><h2>Texte non classé</h2><div class="small muted">Lignes de l’import que l’appli n’a pas su placer. Récupère ce qui t’est utile, puis vide la zone. Cette zone n’apparaît pas sur le CV.</div><label class="f"><textarea data-p="data.extra" rows="7">${esc(cv.data.extra)}</textarea></label></div>`;
 }
+function layItem(cv, k, two) {
+  const z = szOf(cv, k);
+  return `<div class="dragc${cv.show[k] === false ? ' off' : ''}" data-k="${k}"><span class="gp">⋮⋮</span><span class="dn">${SHORT[k] || SECS[k]}${z !== 1 ? ` <small>${Math.round(z * 100)} %</small>` : ''}</span>
+   <button class="ib sm" data-act="szm" data-k="${k}" data-d="-1" aria-label="Plus petit">A−</button><button class="ib sm" data-act="szm" data-k="${k}" data-d="1" aria-label="Plus grand">A+</button>
+   <button class="ib sm" data-act="eye" data-k="${k}" aria-label="Afficher ou masquer">${cv.show[k] === false ? '🚫' : '👁'}</button>${two ? `<button class="ib sm" data-act="colmv" data-k="${k}" aria-label="Changer de colonne">⇄</button>` : ''}</div>`;
+}
+function layCard(cv) {
+  const two = twoCol(cv);
+  const zone = (id, label, keys) => `<div class="dropz" data-z="${id}"><div class="small muted zl">${label}</div>${keys.map(k => layItem(cv, k, two)).join('')}</div>`;
+  const main = cv.order.filter(k => colOf(cv, k) === 'main'), side = cv.order.filter(k => colOf(cv, k) === 'side');
+  return `<div class="card"><h2>Mise en page</h2><div class="small muted">Appui long sur une rubrique puis glisse pour la déplacer${two ? ' (d’une colonne à l’autre aussi)' : ''}. A− / A+ : taille de la rubrique. 👁 : afficher ou masquer.</div>
+   ${two ? zone('main', 'Colonne principale', main) + zone('side', 'Colonne latérale', side) : zone('main', 'Ordre des rubriques', main)}</div>`;
+}
 function edStyle(cv) {
-  return `<div class="card"><h2>Modèle</h2><div class="tplgrid">${TPLS.map(([k, n]) => `<button class="${cv.tpl === k ? 'on' : ''}" data-act="tpl" data-v="${k}">${thumb({ ...cv, tpl: k, updated: cv.updated }, 84, true)}<span>${n}</span></button>`).join('')}</div></div>
-  <div class="card"><h2>Couleur</h2><div class="pal">${ACCENTS.map(c => `<button class="${cv.accent === c ? 'on' : ''}" style="background:${c}" data-act="cvacc" data-v="${c}" aria-label="${c}"></button>`).join('')}<input type="color" data-p="accent" value="${cv.accent}" style="width:40px;height:40px;border:0;background:none;padding:0"></div></div>
+  return `<div class="card"><h2>Modèle</h2><div class="tplgrid">${TPLS.map(([k, n]) => `<button class="${cv.tpl === k ? 'on' : ''}" data-act="tpl" data-v="${k}">${thumb({ ...cv, tpl: k, updated: cv.updated }, 84, true)}<span>${n}</span></button>`).join('')}</div>
+   ${cv.tpl !== 'moderne' ? `<label class="swrow"><span>Deux colonnes (colonne latérale)</span><span class="sw"><input type="checkbox" data-p="cols" data-r="1" ${cv.cols ? 'checked' : ''}><i></i></span></label>` : ''}
+   <label class="swrow"><span>Une seule page (réglage automatique)</span><span class="sw"><input type="checkbox" data-p="one" data-r="1" ${cv.one ? 'checked' : ''}><i></i></span></label>
+   <button class="btn ghost" data-act="auto">✨ Auto : meilleur modèle et mise en page</button></div>
+  <div class="card"><h2>Couleur</h2><div class="pal">${ACCENTS.map(c => `<button class="${cv.accent === c ? 'on' : ''}" style="background:${c}" data-act="cvacc" data-v="${c}" aria-label="${c}"></button>`).join('')}<label class="cpick" aria-label="Couleur libre"><input type="color" data-p="accent" value="${/^#[0-9a-f]{6}$/i.test(cv.accent) ? cv.accent : '#1F5BD8'}"><span>＋</span></label></div></div>
   <div class="card"><h2>Texte</h2><div class="seg"><button class="${cv.font !== 'serif' ? 'on' : ''}" data-act="cvfont" data-v="sans">Sans empattement</button><button class="${cv.font === 'serif' ? 'on' : ''}" data-act="cvfont" data-v="serif">Avec empattement</button></div>
-   <label class="f">Taille du texte : <span class="muted small">réduis-la pour tenir sur une page</span><input type="range" min="0.82" max="1.15" step="0.01" data-p="scale" data-num="1" value="${cv.scale || 1}"></label>
-   <label class="swrow"><span>Afficher la photo</span><span class="sw"><input type="checkbox" data-p="photo" ${cv.photo !== false ? 'checked' : ''}><i></i></span></label></div>
-  <div class="card"><h2>Rubriques</h2><div class="small muted">Ordre et visibilité. ${cv.tpl === 'moderne' ? 'Dans ce modèle, compétences, langues et loisirs restent dans la colonne de gauche.' : ''}</div>
-   ${cv.order.map((k, n) => `<div class="skill"><span style="flex:1">${SECS[k]}</span><span class="sw"><input type="checkbox" data-p="show.${k}" ${cv.show[k] !== false ? 'checked' : ''}><i></i></span><button class="ib sm" data-act="secmv" data-k="${k}" data-d="-1" ${n === 0 ? 'disabled' : ''}>↑</button><button class="ib sm" data-act="secmv" data-k="${k}" data-d="1" ${n === cv.order.length - 1 ? 'disabled' : ''}>↓</button></div>`).join('')}</div>`;
+   <label class="f">Taille du texte ${cv.one ? '<span class="muted small">(réduite automatiquement si besoin)</span>' : ''}<input type="range" min="0.82" max="1.15" step="0.01" data-p="scale" data-num="1" value="${cv.scale || 1}"></label>
+   <label class="swrow"><span>Afficher la photo</span><span class="sw"><input type="checkbox" data-p="photo" ${cv.photo !== false ? 'checked' : ''}><i></i></span></label>
+   ${cv.data.identity.photo ? '<button class="btn ghost sm" data-act="crop">Recadrer la photo</button>' : ''}</div>
+  ${layCard(cv)}`;
 }
 function edControle(cv) {
   const { L, score } = qualityChecks(cv);
@@ -620,11 +673,132 @@ function doImport() {
 function readPhoto(file) {
   const img = new Image(), url = URL.createObjectURL(file);
   img.onload = () => {
-    const s = Math.min(img.width, img.height), c = document.createElement('canvas'); c.width = c.height = 320;
-    c.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 320, 320);
-    const cv = curCV(); cv.data.identity.photo = c.toDataURL('image/jpeg', .85); URL.revokeObjectURL(url); touch(cv); render();
+    const k = Math.min(1, 1000 / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+    const cv = curCV(); cv.data.identity.photoSrc = c.toDataURL('image/jpeg', .85); touch(cv); openCrop(cv.data.identity.photoSrc);
   };
   img.onerror = () => toast('Image illisible'); img.src = url;
+}
+const CF = 260;
+function openCrop(src) {
+  const im = new Image();
+  im.onload = () => {
+    ui.crop = { im, w: im.naturalWidth, h: im.naturalHeight, x: 0, y: 0, z: 1 };
+    openSheet(`<div class="sh"><h2>Recadrer la photo</h2><button class="ib" data-act="closesheet">✕</button></div>
+     <div class="small muted">Appuie longtemps sur la photo puis glisse pour la déplacer. Le cercle montre ce qui sera visible.</div>
+     <div id="cropf"><img id="cropi" src="${src}" alt="" draggable="false"></div>
+     <label class="f">Zoom<input type="range" id="cropz" min="1" max="3" step="0.01" value="1"></label>
+     <div class="row2"><button class="btn ghost" data-act="closesheet" style="flex:1">Annuler</button><button class="btn" data-act="cropok" style="flex:1">Valider</button></div>`);
+    cropApply();
+  };
+  im.src = src;
+}
+function cropApply() {
+  const c = ui.crop, img = $('#cropi'); if (!c || !img) return;
+  const bs = CF / Math.min(c.w, c.h) * c.z, dw = c.w * bs, dh = c.h * bs;
+  c.x = Math.max(-(dw - CF) / 2, Math.min((dw - CF) / 2, c.x)); c.y = Math.max(-(dh - CF) / 2, Math.min((dh - CF) / 2, c.y));
+  img.style.cssText = `width:${dw}px;height:${dh}px;left:${CF / 2 - dw / 2 + c.x}px;top:${CF / 2 - dh / 2 + c.y}px`;
+}
+let cg = null;
+document.addEventListener('pointerdown', e => {
+  const f = e.target.closest('#cropf'); if (!f || !ui.crop) return;
+  cg = { sx: e.clientX, sy: e.clientY, ox: ui.crop.x, oy: ui.crop.y, on: e.pointerType === 'mouse' };
+  if (cg.on) f.classList.add('grab');
+  else cg.t = setTimeout(() => { if (cg) { cg.on = true; f.classList.add('grab'); navigator.vibrate?.(20); } }, 280);
+});
+document.addEventListener('pointermove', e => {
+  if (!cg) return;
+  const dx = e.clientX - cg.sx, dy = e.clientY - cg.sy;
+  if (!cg.on) { if (Math.hypot(dx, dy) > 10) { clearTimeout(cg.t); cg = null; } return; }
+  ui.crop.x = cg.ox + dx; ui.crop.y = cg.oy + dy; cropApply();
+});
+const cgEnd = () => { if (cg) { clearTimeout(cg.t); cg = null; $('#cropf')?.classList.remove('grab'); } };
+document.addEventListener('pointerup', cgEnd); document.addEventListener('pointercancel', cgEnd);
+document.addEventListener('touchmove', e => { if (cg && cg.on) e.preventDefault(); }, { passive: false });
+document.addEventListener('input', e => { if (e.target.id === 'cropz' && ui.crop) { ui.crop.z = +e.target.value; cropApply(); } });
+function cropSave() {
+  const c = ui.crop, cv = curCV(); if (!c || !cv) return;
+  const bs = CF / Math.min(c.w, c.h) * c.z, side = CF / bs, cx = c.w / 2 - c.x / bs, cy = c.h / 2 - c.y / bs;
+  const cn = document.createElement('canvas'); cn.width = cn.height = 400;
+  cn.getContext('2d').drawImage(c.im, cx - side / 2, cy - side / 2, side, side, 0, 0, 400, 400);
+  cv.data.identity.photo = cn.toDataURL('image/jpeg', .88); ui.crop = null; touch(cv); closeSheet(); render();
+}
+
+/* ---- écran partagé : aperçu en direct, poignée, glisser-déposer ---- */
+let liveT;
+function updLive() {
+  const cv = ui.ed && curCV(), box = $('#lps'); if (!cv || !box) return;
+  const r = renderPages(cv), side = document.body.classList.contains('filt-side');
+  const w = Math.max(150, box.clientWidth - 24 - (side ? 30 : 0)) * (ui.lz || 1), k = w / PAGE_W, h = w * 297 / 210, st = box.scrollTop;
+  box.innerHTML = `<div class="lpin" style="width:${w + 24}px">${r.pages.map(p => `<div class="pgbox" style="width:${w}px;height:${h}px"><div style="transform:scale(${k});transform-origin:0 0;width:${PAGE_W}px">${p}</div></div>`).join('')}</div>`;
+  box.scrollTop = st;
+  const n = r.pages.length; let info = `${n} page${n > 1 ? 's' : ''}`;
+  if (cv.one) info += r.fit ? (r.sc < (cv.scale || 1) - 0.005 ? ` · texte à ${Math.round(r.sc * 100)} %` : ' · 1 page OK') : ' · ne tient pas : masque une rubrique';
+  if (r.over) info += ' · colonne latérale trop remplie';
+  const el = $('#lpinfo'); if (el) el.textContent = info;
+}
+const liveSoon = () => { clearTimeout(liveT); liveT = setTimeout(updLive, 130); };
+document.addEventListener('pointerdown', e => {
+  const h = e.target.closest('.handle'); if (!h) return;
+  const y0 = e.clientY, v0 = ui.lh; h.setPointerCapture(e.pointerId);
+  const mv = ev => { ui.lh = Math.round(Math.max(14, Math.min(78, v0 + (ev.clientY - y0) / innerHeight * 100))); $('.edsplit')?.style.setProperty('--lh', ui.lh + 'vh'); };
+  const up = () => { h.removeEventListener('pointermove', mv); h.removeEventListener('pointerup', up); h.removeEventListener('pointercancel', up); updLive(); };
+  h.addEventListener('pointermove', mv); h.addEventListener('pointerup', up); h.addEventListener('pointercancel', up);
+});
+let dd = null;
+function ddStart() {
+  const r = dd.row.getBoundingClientRect(); dd.on = true; navigator.vibrate?.(15);
+  dd.ghost = dd.row.cloneNode(true); dd.ghost.classList.add('ghostc'); dd.ghost.style.width = r.width + 'px'; dd.off = { x: dd.px - r.left, y: dd.py - r.top };
+  document.body.appendChild(dd.ghost); dd.row.classList.add('lifting'); ddMove(dd.px, dd.py);
+}
+function ddMove(x, y) {
+  dd.ghost.style.left = (x - dd.off.x) + 'px'; dd.ghost.style.top = (y - dd.off.y) + 'px';
+  const t = document.elementFromPoint(x, y), over = t && t.closest('.dragc');
+  if (over && over !== dd.row && !over.classList.contains('ghostc')) { const b = over.getBoundingClientRect(); over.parentNode.insertBefore(dd.row, y < b.top + b.height / 2 ? over : over.nextSibling); }
+  else if (!over) { const z = t && t.closest('.dropz'); if (z) z.appendChild(dd.row); }
+  const f = $('.edform'); if (f) { const b = f.getBoundingClientRect(); if (y < b.top + 50) f.scrollTop -= 12; else if (y > b.bottom - 90) f.scrollTop += 12; }
+}
+function ddEnd(ok) {
+  if (!dd) return; clearTimeout(dd.t);
+  if (dd.on) {
+    dd.ghost.remove(); dd.row.classList.remove('lifting');
+    if (ok) {
+      const cv = curCV(), two = twoCol(cv), order = []; cv.col = cv.col || {};
+      document.querySelectorAll('.dropz').forEach(z => z.querySelectorAll('.dragc').forEach(r => { order.push(r.dataset.k); if (two) cv.col[r.dataset.k] = z.dataset.z; }));
+      cv.order = order; touch(cv); render();
+    }
+  }
+  dd = null;
+}
+document.addEventListener('pointerdown', e => {
+  const row = e.target.closest('.dragc'); if (!row || e.target.closest('button')) return;
+  const handle = !!e.target.closest('.gp');
+  dd = { row, px: e.clientX, py: e.clientY, on: false };
+  dd.t = setTimeout(() => { if (dd && !dd.on) ddStart(); }, e.pointerType === 'mouse' || handle ? 60 : 380);
+});
+document.addEventListener('pointermove', e => {
+  if (!dd) return;
+  if (!dd.on) { if (Math.hypot(e.clientX - dd.px, e.clientY - dd.py) > 10) { clearTimeout(dd.t); dd = null; } return; }
+  ddMove(e.clientX, e.clientY);
+});
+document.addEventListener('pointerup', () => ddEnd(true));
+document.addEventListener('pointercancel', () => { if (dd && !dd.on) dd = null; });
+document.addEventListener('touchmove', e => { if (dd && dd.on) e.preventDefault(); }, { passive: false });
+document.addEventListener('contextmenu', e => { if (e.target.closest('.dragc,#cropf')) e.preventDefault(); });
+
+/* ---- Auto ---- */
+function autoLayout() {
+  const cv = curCV(), keys = ['tpl', 'accent', 'font', 'scale', 'one', 'cols', 'col', 'order', 'sz', 'show'];
+  ui.undo = { id: cv.id, s: clone(Object.fromEntries(keys.map(k => [k, cv[k]]))) };
+  const base = clone(cv); base.order = ['resume', 'domaines', 'experiences', 'formations', 'competences', 'langues', 'certifs', 'loisirs']; base.col = {}; base.sz = {}; base.scale = 1; base.cols = false;
+  const d = base.data, rich = (d.competences || []).length + (d.langues || []).length;
+  const score = t => { const c = { ...clone(base), tpl: t, updated: Date.now() }, r = renderPages(c, true); return { t, r, s: (cv.one ? (r.fit ? r.sc : 0) : 1 - r.pages.length * 0.3 - (r.over ? 0.2 : 0)) + (t === 'moderne' && rich >= 8 ? 0.04 : 0) + (t === 'classique' ? 0.01 : 0) }; };
+  const pick = () => ['classique', 'moderne', 'chrono', 'bandeau', 'elegant'].map(score).sort((a, b) => b.s - a.s)[0];
+  let best = pick; best = pick(); const hid = [];
+  if (cv.one) for (const k of ['loisirs', 'certifs', 'domaines']) { if (best.r.fit) break; if (base.show[k] === false) continue; base.show[k] = false; hid.push(SHORT[k]); best = pick(); }
+  Object.assign(cv, { tpl: best.t, cols: false, scale: 1, order: base.order, col: {}, sz: {}, show: base.show });
+  touch(cv); render();
+  toast(`Auto : modèle ${TPLS.find(x => x[0] === best.t)[1]}${cv.one ? `, texte à ${Math.round(best.r.sc * 100)} %` : ''}${hid.length ? `, masqué : ${hid.join(', ')}` : ''}${cv.one && !best.r.fit ? ' (ne tient toujours pas sur 1 page)' : ''}`);
 }
 
 /* ============ événements ============ */
@@ -633,8 +807,8 @@ document.addEventListener('input', e => {
   const el = e.target, cv = ui.ed ? curCV() : null;
   if (el.dataset.u) { setPath(ui, el.dataset.u, val(el)); return; }
   if (!cv) return;
-  if (el.dataset.p) { setPath(cv, el.dataset.p, val(el)); if (el.dataset.p === 'name') { /* nom du CV */ } touch(cv); }
-  else if (el.dataset.l) { const it = cv.data[el.dataset.l].find(x => x.id === el.dataset.i); if (it) { it[el.dataset.k] = val(el); touch(cv); } }
+  if (el.dataset.p) { setPath(cv, el.dataset.p, val(el)); touch(cv); liveSoon(); }
+  else if (el.dataset.l) { const it = cv.data[el.dataset.l].find(x => x.id === el.dataset.i); if (it) { it[el.dataset.k] = val(el); touch(cv); liveSoon(); } }
 });
 document.addEventListener('change', e => {
   const el = e.target;
@@ -654,9 +828,9 @@ const ACT = {
   docreate: v => { const cv = newCV(ui.nn || 'Mon CV', v === 'sample' ? sampleData() : null); S.cvs.push(cv); save(); closeSheet(); ui.ed = cv.id; ui.edTab = 'infos'; render(); scrollTo(0, 0); },
   importpdf: () => $('#fPdf').click(),
   doimport: () => doImport(),
-  edit: (v, el) => { ui.ed = el.dataset.id; ui.edTab = 'infos'; render(); scrollTo(0, 0); },
+  edit: (v, el) => { ui.ed = el.dataset.id; ui.edTab = 'infos'; ui.resetForm = 1; render(); scrollTo(0, 0); },
   back: () => { ui.ed = null; render(); },
-  edtab: v => { ui.edTab = v; render(); scrollTo(0, 0); },
+  edtab: v => { ui.edTab = v; ui.resetForm = 1; render(); },
   dismiss: () => { const cv = curCV(); delete cv.review; touch(cv); render(); },
   prev: (v, el) => { const id = el.dataset.id; openPreview(S.cvs.find(c => c.id === id)); },
   closeprev: () => { $('#prev')?.remove(); ui.prevId = null; },
@@ -677,7 +851,15 @@ const ACT = {
   mv: (v, el) => { const cv = curCV(), a = cv.data[el.dataset.l], n = a.findIndex(x => x.id === el.dataset.i), m = n + (+el.dataset.d); if (m < 0 || m >= a.length) return; [a[n], a[m]] = [a[m], a[n]]; touch(cv); render(); },
   addskill: () => { const inp = $('#newskill'), cv = curCV(); const names = inp.value.split(/[,;\n]/).map(s => s.trim()).filter(Boolean); if (!names.length) return; names.forEach(n => cv.data.competences.push({ id: uid(), on: true, nom: n, niveau: 0 })); touch(cv); render(); },
   photo: () => $('#fPhoto').click(),
-  rmphoto: () => { const cv = curCV(); cv.data.identity.photo = ''; touch(cv); render(); },
+  rmphoto: () => { const cv = curCV(); cv.data.identity.photo = ''; cv.data.identity.photoSrc = ''; touch(cv); render(); },
+  crop: () => { const cv = curCV(), i = cv.data.identity; openCrop(i.photoSrc || i.photo); },
+  cropok: () => cropSave(),
+  lzoom: (v, el) => { ui.lz = Math.max(.6, Math.min(2.4, (ui.lz || 1) + (+el.dataset.d) * .25)); updLive(); },
+  auto: () => autoLayout(),
+  undoauto: () => { const cv = curCV(); if (!ui.undo || ui.undo.id !== cv.id) return; Object.assign(cv, clone(ui.undo.s)); ui.undo = null; touch(cv); render(); toast('Auto annulé'); },
+  eye: (v, el) => { const cv = curCV(), k = el.dataset.k; cv.show[k] = cv.show[k] === false ? true : false; touch(cv); render(); },
+  szm: (v, el) => { const cv = curCV(), k = el.dataset.k; cv.sz = cv.sz || {}; cv.sz[k] = Math.max(.7, Math.min(1.3, Math.round((szOf(cv, k) + (+el.dataset.d) * .05) * 100) / 100)); if (cv.sz[k] === 1) delete cv.sz[k]; touch(cv); render(); },
+  colmv: (v, el) => { const cv = curCV(), k = el.dataset.k; cv.col = cv.col || {}; cv.col[k] = colOf(cv, k) === 'side' ? 'main' : 'side'; touch(cv); render(); },
   tpl: v => { const cv = curCV(); cv.tpl = v; touch(cv); render(); },
   cvacc: v => { const cv = curCV(); cv.accent = v; touch(cv); render(); },
   cvfont: v => { const cv = curCV(); cv.font = v; touch(cv); render(); },
