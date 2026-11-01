@@ -23,8 +23,9 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.8.1';
+const APP_VERSION = '1.8.2';
 const CHANGELOG = [
+  { v: '1.8.2', d: '01/11/2026', l: ['Agenda : bouton « Copier le code » pour envoyer les rendez-vous directement dans l’appli AgenDam (sans passer par le navigateur)', 'Rendez-vous envoyés plus complets : statut, lien de l’offre, entreprise, notes'] },
   { v: '1.8.1', d: '01/11/2026', l: ['Onglets du côté : largeur fixe, le texte est enfin visible en entier sur iPad', 'Téléphone en mode paysage : même disposition que l’iPad (options à gauche, CV à droite, barre du milieu réglable)'] },
   { v: '1.8.0', d: '01/11/2026', l: ['Offre : « Métiers qui te correspondent » — une centaine de métiers classés selon ton CV (aéronautique très détaillé), avec les mots-clés qui collent et ceux à acquérir, et un bouton pour créer un CV adapté', 'Réglages > Métiers : choisis un ou plusieurs domaines, masque des métiers, ajoute les tiens', 'iPad : les onglets ne cachent plus le CV (colonne dédiée à droite) et la barre du milieu se glisse de gauche à droite pour régler la taille', 'Onglets verticaux compatibles avec les anciens iPad et iPhone', 'Suivi : date, heure, durée et lieu des entretiens', 'Suivi > 📅 Agenda : envoi des entretiens et relances vers AgenDam par un lien, ou en fichier .ics pour Apple, Outlook, Google'] },
   { v: '1.7.0', d: '01/11/2026', l: ['Offre : tu choisis les sites d’emploi — masquer, supprimer, ajouter les tiens (colle l’adresse d’une recherche, l’appli la transforme), réinitialiser'] },
@@ -1121,20 +1122,30 @@ function demoOff() {
 /* ============ agenda : AgenDam / .ics ============ */
 const pad2 = n => String(n).padStart(2, '0');
 const ymdLocal = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+function agNote(j, rdv) {
+  const st = (STATUTS.find(s => s[0] === j.statut) || [, ''])[1], L = [];
+  L.push(rdv ? 'Entretien pour : ' + (j.poste || 'poste') + (j.entreprise ? ' chez ' + j.entreprise : '') : 'Relancer la candidature : ' + (j.poste || 'poste') + (j.entreprise ? ' chez ' + j.entreprise : ''));
+  if (st) L.push('Statut : ' + st);
+  if (j.date) L.push('Candidature envoyée le ' + fmtDate(j.date));
+  if (j.url) L.push('Offre : ' + j.url);
+  if (j.notes) L.push('', j.notes);
+  return L.join('\n');
+}
 function agendaEvents() {
   const out = [], today = ymdLocal(new Date());
   for (const j of S.jobs) {
     const nm = `${j.poste || 'Poste'}${j.entreprise ? ' – ' + j.entreprise : ''}`;
     if (j.rdv && /^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(j.rdv)) {
       const d = j.rdv.slice(0, 10), t = j.rdv.slice(11, 16), m = +t.slice(0, 2) * 60 + +t.slice(3, 5), e = Math.min(1439, m + (+j.rdvDur || 60));
-      out.push({ id: 'cv-' + j.id + '-rdv', title: 'Entretien : ' + nm, allDay: false, start: d, end: d, startTime: t, endTime: `${pad2(Math.floor(e / 60))}:${pad2(e % 60)}`, place: j.rdvLieu || '', note: j.notes || '' });
+      out.push({ id: 'cv-' + j.id + '-rdv', title: 'Entretien : ' + nm, allDay: false, start: d, end: d, startTime: t, endTime: `${pad2(Math.floor(e / 60))}:${pad2(e % 60)}`, place: j.rdvLieu || '', note: agNote(j, true) });
     }
-    if (j.relance && !['refus', 'offre'].includes(j.statut)) out.push({ id: 'cv-' + j.id + '-rel', title: 'Relancer : ' + nm, allDay: true, start: j.relance, end: j.relance, startTime: '09:00', endTime: '10:00', place: '', note: '' });
+    if (j.relance && !['refus', 'offre'].includes(j.statut)) out.push({ id: 'cv-' + j.id + '-rel', title: 'Relancer : ' + nm, allDay: true, start: j.relance, end: j.relance, startTime: '09:00', endTime: '10:00', place: j.entreprise || '', note: agNote(j, false) });
   }
   return out.filter(e => e.start >= today).sort((x, y) => (x.start + x.startTime).localeCompare(y.start + y.startTime));
 }
 const agPicked = () => { const off = ui.agOff || (ui.agOff = {}); return agendaEvents().filter(e => !off[e.id]); };
 const b64u = t => btoa(unescape(encodeURIComponent(t))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const agCode = evs => 'CVPOCHE:' + b64u(JSON.stringify({ app: 'cv', v: 1, ev: evs }));
 const agLink = evs => 'https://dam-cigogne.github.io/agenda/#cv=' + b64u(JSON.stringify({ app: 'cv', v: 1, ev: evs }));
 const icsEsc = t => String(t || '').replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
 function buildIcs(evs) {
@@ -1155,7 +1166,7 @@ function agendaSheet() {
   openSheet(`<div class="sh"><h2>Agenda</h2><button class="ib" data-act="closesheet">✕</button></div>
    <div class="small muted">Entretiens et relances à venir. Coche ceux que tu veux envoyer. Ajoute la date et l’heure d’un entretien dans la fiche de la candidature.</div>
    <div>${L.length ? L.map(e => `<div class="skill"><button class="ib sm" data-act="agsel" data-v="${e.id}" aria-label="Choisir">${off[e.id] ? '☐' : '☑'}</button><span style="flex:1;${off[e.id] ? 'opacity:.5' : ''}"><b>${esc(e.title)}</b><br><span class="small muted">${fmtDate(e.start)}${e.allDay ? ' (journée)' : ' · ' + e.startTime.replace(':', ' h ') + ' – ' + e.endTime.replace(':', ' h ')}${e.place ? ' · ' + esc(e.place) : ''}</span></span></div>`).join('') : '<div class="empty small">Rien à venir : ajoute une date d’entretien ou de relance dans une candidature.</div>'}</div>
-   ${L.length ? `<button class="btn" data-act="agsend">Envoyer vers AgenDam</button><div class="row2"><button class="btn ghost" data-act="agcopy" style="flex:1">Copier le lien</button><button class="btn ghost" data-act="agics" style="flex:1">Fichier .ics</button></div><div class="small muted">AgenDam : le lien s’ouvre et propose d’ajouter les rendez-vous. Le fichier .ics marche avec Apple, Outlook et Google Agenda.</div>` : ''}`);
+   ${L.length ? `<button class="btn" data-act="agcode">Copier le code pour AgenDam</button><div class="small muted">Ouvre ensuite l’appli AgenDam installée et appuie sur « Coller depuis CV en poche » : les rendez-vous arrivent directement dans l’appli.</div><div class="row2"><button class="btn ghost" data-act="agsend" style="flex:1">Ouvrir le lien (navigateur)</button><button class="btn ghost" data-act="agics" style="flex:1">Fichier .ics</button></div><div class="small muted">Le lien s’ouvre dans le navigateur, pas dans l’appli installée. Le fichier .ics marche avec Apple, Outlook et Google Agenda.</div>` : ''}`);
 }
 
 /* ============ événements ============ */
@@ -1249,6 +1260,7 @@ const ACT = {
   agenda: () => agendaSheet(),
   agsel: v => { const off = ui.agOff || (ui.agOff = {}); off[v] = !off[v]; agendaSheet(); },
   agsend: () => { const e = agPicked(); if (!e.length) { toast('Coche au moins un rendez-vous'); return; } window.open(agLink(e), '_blank'); },
+  agcode: () => { const e = agPicked(); if (!e.length) { toast('Coche au moins un rendez-vous'); return; } const c = agCode(e); (navigator.clipboard?.writeText(c) || Promise.reject()).then(() => toast('Code copié : ouvre AgenDam et colle-le', 4500), () => { closeSheet(); openSheet(`<div class="sh"><h2>Code AgenDam</h2><button class="ib" data-act="closesheet">✕</button></div><div class="small muted">Copie ce texte en entier, puis colle-le dans AgenDam.</div><textarea readonly rows="6" onfocus="this.select()">${esc(c)}</textarea>`); }); },
   agcopy: () => { const e = agPicked(); if (!e.length) { toast('Coche au moins un rendez-vous'); return; } const u = agLink(e); if (navigator.share) navigator.share({ url: u, title: 'Rendez-vous CV en poche' }).catch(() => { }); else navigator.clipboard?.writeText(u).then(() => toast('Lien copié'), () => toast('Copie impossible')); },
   agics: () => { const e = agPicked(); if (!e.length) { toast('Coche au moins un rendez-vous'); return; } download('rendez-vous-cv.ics', buildIcs(e), 'text/calendar'); },
   jobsite: v => { const so = ui.so; if (!so.q.trim()) { toast('Indique d’abord un métier'); return; } const x = getSites().find(y => y.id === v); if (x) window.open(siteUrl(x.u, so.q, so.l), '_blank', 'noopener'); },
