@@ -23,8 +23,9 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.5.1';
+const APP_VERSION = '1.6.0';
 const CHANGELOG = [
+  { v: '1.6.0', d: '01/11/2026', l: ['Sauvegarde : l’export ouvre maintenant la feuille de partage sur iPhone et iPad (Enregistrer dans Fichiers, AirDrop, Mail…)', 'Offre : « Trouver des offres » ouvre les grands sites d’emploi avec ta recherche déjà remplie', 'Offre : bouton « Coller l’annonce » depuis le presse-papiers'] },
   { v: '1.5.1', d: '01/11/2026', l: ['Recadrage photo : le cadre ne s’écrase plus sur iPhone et iPad', 'Champs texte qui s’agrandissent tout seuls : les longs intitulés restent lisibles en entier'] },
   { v: '1.5.0', d: '01/11/2026', l: ['Photo : le recadrage marche maintenant sur iPhone et iPad (glisser, appui long, pincer pour zoomer)', 'Glisser-déposer des rubriques réparé sur iPhone et iPad', 'Mode démo : faux CV, vraies annonces, suivi complet — on le quitte d’un bouton et tes données reviennent', 'Guide du CV complété : mise en page, langues et loisirs, situations (reconversion, débutant, militaire, senior, anglais), lettre de motivation, entretien, LinkedIn', 'Suivi : bouton pour relire et analyser l’annonce d’une candidature', 'Réglages > Mises à jour : message « Application à jour · version X » (ou « Mise à jour disponible »), vérifié à chaque ouverture', 'Onglets du côté : un onglet par carte, comme Comptes en ligne'] },
   { v: '1.4.0', d: '01/11/2026', l: ['Écran partagé : le vrai CV à côté (ou au-dessus) des options, mis à jour en direct, poignée pour redimensionner', 'Mise en page : rubriques à déplacer par appui long, colonne principale ou latérale, taille par rubrique, deux colonnes sur tous les modèles', 'Option « Une seule page » : le texte se règle tout seul', 'Bouton ✨ Auto : choisit le meilleur modèle et la meilleure mise en page (annulable)', '20 couleurs de CV + couleur libre', 'Recadrage de la photo : appui long puis glisser pour la déplacer, curseur de zoom'] },
@@ -67,7 +68,7 @@ addEventListener('pagehide', saveNow);
 document.addEventListener('visibilitychange', () => { if (document.hidden) saveNow(); });
 
 const ui = { tab: 'cv', ed: null, edTab: 'infos', open: {}, jobFilter: 'all', gcat: 'essentiel', stab: 'app', offre: { text: '', cvId: '', entreprise: '', poste: '', res: null, mask: true, settitle: false }, prevZoom: 1, jd: null, imp: null, sheet: null };
-ui.lh = 42; ui.lz = 1;
+ui.lh = 42; ui.lz = 1; ui.so = { q: '', l: '' };
 const curCV = () => S.cvs.find(c => c.id === ui.ed);
 const touch = cv => { cv.updated = Date.now(); save(); };
 
@@ -561,12 +562,17 @@ function tabOffre() {
   const o = ui.offre, res = o.res;
   if (!o.cvId || !S.cvs.some(c => c.id === o.cvId)) o.cvId = S.cvs[0]?.id || '';
   if (!S.cvs.length) return `<div class="wrap"><div class="top"><span class="app">Offre</span></div><div class="card empty"><b>Crée d’abord un CV</b><div class="small">L’analyse compare une annonce avec ton CV.</div><button class="btn" data-act="nav" data-v="cv" style="margin-top:8px">Aller aux CV</button></div></div>`;
+  const cv0 = S.cvs.find(c => c.id === o.cvId) || S.cvs[0], so = ui.so;
+  if (!so.q && !so.init) { so.init = 1; so.q = cv0?.data.identity.titre || ''; so.l = cv0?.data.identity.ville || ''; }
   return `<div class="wrap"><div class="top"><span class="app">Offre</span></div>
+  <div class="card"><h2>Trouver des offres</h2><div class="small muted">Choisis un métier et une ville : un site s’ouvre avec ta recherche déjà faite. Ouvre l’annonce, copie son texte, puis reviens ici et touche « Coller l’annonce ».</div>
+   <div class="grid2"><label class="f">Métier<input data-u="so.q" value="${esc(so.q)}" placeholder="Ex. chargé de communication"></label><label class="f">Ville<input data-u="so.l" value="${esc(so.l)}" placeholder="Ex. Lyon"></label></div>
+   <div class="chips">${JOBSITES.map(([k, n]) => `<button class="btn sm ghost" data-act="jobsite" data-v="${k}">${n}</button>`).join('')}</div></div>
   <div class="card"><h2>Adapter son CV à une annonce</h2><div class="small muted">Colle l’annonce : l’appli repère les mots-clés et ce qui manque à ton CV.</div>
    <label class="f">CV à comparer<select data-u="offre.cvId">${S.cvs.map(c => `<option value="${c.id}" ${c.id === o.cvId ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>
    <div class="grid2"><label class="f">Poste<input data-u="offre.poste" value="${esc(o.poste)}" placeholder="Ex. Chef de projet"></label><label class="f">Entreprise<input data-u="offre.entreprise" value="${esc(o.entreprise)}"></label></div>
    <label class="f">Texte de l’annonce<textarea data-u="offre.text" rows="8" placeholder="Colle ici l’annonce…">${esc(o.text)}</textarea></label>
-   <button class="btn" data-act="analyze">Analyser</button></div>
+   <div class="row2"><button class="btn ghost" data-act="pasteoffre" style="flex:1">Coller l’annonce</button><button class="btn" data-act="analyze" style="flex:1">Analyser</button></div></div>
   ${res ? `<div class="card"><div class="rowline"><div class="ring" style="--p:${res.score}"><b>${res.score}%</b></div><div><h2>Correspondance</h2><div class="small muted">Part des mots-clés de l’annonce présents dans ton CV.</div></div></div>
    <div><b class="small">Déjà présents</b><div class="kw" style="margin-top:6px">${res.ok.length ? res.ok.map(w => `<span class="chip ok">${esc(w)}</span>`).join('') : '<span class="muted small">Aucun</span>'}</div></div>
    <div><b class="small">Absents de ton CV</b> <span class="small muted">· touche un mot pour l’ajouter aux compétences</span><div class="kw" style="margin-top:6px">${res.miss.length ? res.miss.map(w => `<span class="chip warn" data-act="addkw" data-w="${esc(w)}">+ ${esc(w)}</span>`).join('') : '<span class="muted small">Rien d’important ne manque.</span>'}</div></div>
@@ -867,6 +873,15 @@ function autoLayout() {
 
 
 /* ============ mode démo ============ */
+const JOBSITES = [['ft', 'France Travail'], ['indeed', 'Indeed'], ['li', 'LinkedIn'], ['apec', 'Apec'], ['wttj', 'Welcome to the Jungle'], ['hw', 'HelloWork']];
+const siteUrl = (k, q, l) => { q = encodeURIComponent(q.trim()); l = encodeURIComponent(l.trim()); return ({
+  ft: `https://candidat.francetravail.fr/offres/recherche?motsCles=${q}`,
+  indeed: `https://fr.indeed.com/jobs?q=${q}&l=${l}`,
+  li: `https://www.linkedin.com/jobs/search/?keywords=${q}&location=${l}`,
+  apec: `https://www.apec.fr/candidat/recherche-emploi.html/emploi?motsCles=${q}`,
+  wttj: `https://www.welcometothejungle.com/fr/jobs?query=${q}`,
+  hw: `https://www.hellowork.com/fr-fr/emploi/recherche.html?k=${q}&l=${l}`,
+})[k]; };
 const OFFRES = [
   { poste: 'Chargé(e) de communication digitale', ent: 'Maison Verdier', txt: `Maison Verdier, entreprise familiale lyonnaise de 80 salariés (vins et spiritueux), recrute un(e) Chargé(e) de communication digitale en CDI.
 
@@ -1037,6 +1052,9 @@ const ACT = {
   clreset: () => { S.checks = {}; save(); render(); },
   stab: v => { ui.stab = v; render(); },
   demo: () => demoOn(),
+  jobsite: v => { const so = ui.so; if (!so.q.trim()) { toast('Indique d’abord un métier'); return; } window.open(siteUrl(v, so.q, so.l), '_blank', 'noopener'); },
+  pasteoffre: () => { if (!navigator.clipboard?.readText) { toast('Colle à la main dans la zone de texte'); return; } navigator.clipboard.readText().then(t => { t = (t || '').trim(); if (!t) { toast('Le presse-papiers est vide'); return; } if (/^https?:\/\/\S+$/.test(t)) { toast('C’est un lien : ouvre la page et copie le texte de l’annonce'); return; } ui.offre.text = t; ui.offre.res = null; render(); toast('Annonce collée'); }, () => toast('Accès refusé : colle à la main dans la zone de texte')); },
+  copydl: () => { navigator.clipboard?.writeText(ui.dl || '').then(() => toast('Copié'), () => { const t = $('#dltxt'); t.select(); toast('Sélectionné : copie avec le menu'); }); },
   demoquit: () => demoOff(),
   jobanalyze: (v, el) => { const j = S.jobs.find(x => x.id === el.dataset.id); if (!j) return; const cv = S.cvs.find(c => c.id === j.cvId) || S.cvs[0]; if (!cv) return; ui.offre = { text: j.offre, cvId: cv.id, entreprise: j.entreprise, poste: j.poste, res: analyzeOffer(j.offre, cv), mask: true, settitle: false }; closeSheet(); ui.tab = 'offre'; ui.ed = null; render(); scrollTo(0, 0); },
   set: (v, el) => { S.set[el.dataset.k] = v; save(); applySettings(); render(); },
@@ -1053,9 +1071,22 @@ document.addEventListener('click', e => {
   e.stopPropagation(); f(el.dataset.v, el);
 });
 
-function download(name, text, type) {
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; document.body.appendChild(a); a.click();
-  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+async function download(name, text, type) {
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (navigator.share && navigator.canShare) {
+    for (const t of [type, 'text/plain']) {
+      try {
+        const f = new File([text], name, { type: t });
+        if (navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: name }); return; }
+      } catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+  }
+  if (!isIOS) {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); return;
+  }
+  ui.dl = text; ui.dlName = name;
+  openSheet(`<div class="sh"><h2>Copier la sauvegarde</h2><button class="ib" data-act="closesheet">✕</button></div><div class="small muted">Le partage de fichier n’est pas disponible ici. Copie le texte, puis colle-le dans Notes ou Fichiers (nom conseillé : ${esc(name)}).</div><textarea id="dltxt" rows="6" readonly style="width:100%;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--bg)">${esc(text)}</textarea><button class="btn" data-act="copydl">Copier tout</button>`);
 }
 async function importJson(file) {
   try {
