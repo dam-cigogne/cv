@@ -23,8 +23,9 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.5.0';
 const CHANGELOG = [
+  { v: '1.5.0', d: '01/11/2026', l: ['Photo : le recadrage marche maintenant sur iPhone et iPad (glisser, appui long, pincer pour zoomer)', 'Glisser-déposer des rubriques réparé sur iPhone et iPad', 'Mode démo : faux CV, vraies annonces, suivi complet — on le quitte d’un bouton et tes données reviennent', 'Guide du CV complété : mise en page, langues et loisirs, situations (reconversion, débutant, militaire, senior, anglais), lettre de motivation, entretien, LinkedIn', 'Suivi : bouton pour relire et analyser l’annonce d’une candidature', 'Réglages > Mises à jour : message « Application à jour · version X » (ou « Mise à jour disponible »), vérifié à chaque ouverture', 'Onglets du côté : un onglet par carte, comme Comptes en ligne'] },
   { v: '1.4.0', d: '01/11/2026', l: ['Écran partagé : le vrai CV à côté (ou au-dessus) des options, mis à jour en direct, poignée pour redimensionner', 'Mise en page : rubriques à déplacer par appui long, colonne principale ou latérale, taille par rubrique, deux colonnes sur tous les modèles', 'Option « Une seule page » : le texte se règle tout seul', 'Bouton ✨ Auto : choisit le meilleur modèle et la meilleure mise en page (annulable)', '20 couleurs de CV + couleur libre', 'Recadrage de la photo : appui long puis glisser pour la déplacer, curseur de zoom'] },
   { v: '1.3.0', d: '01/11/2026', l: ['Onglets verticaux sur le bord droit (comme Comptes en ligne) partout : Réglages, éditeur, Suivi, Guide', 'Mode « Sur le côté » activé par défaut'] },
   { v: '1.2.0', d: '01/11/2026', l: ['Version de l’appli et liste des mises à jour dans Réglages', 'Bouton « Vérifier les mises à jour »'] },
@@ -32,17 +33,24 @@ const CHANGELOG = [
   { v: '1.0.1', d: '01/11/2026', l: ['Correctif : import de PDF qui ne démarrait pas (fichiers de lecture mal placés)'] },
   { v: '1.0.0', d: '01/11/2026', l: ['Première version : Mes CV, éditeur, 5 modèles, export PDF', 'Import d’un PDF avec lecture automatique des rubriques', 'Offre : analyse d’annonce et version adaptée', 'Suivi des candidatures, Guide du CV, Réglages en onglets'] },
 ];
-async function checkUpdate() {
+const hhmm = () => new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+async function checkUpdate(silent) {
+  ui.upd = { st: 'wait' }; if (!silent && ui.tab === 'regl') render();
   try {
     const t = await fetch('app.js', { cache: 'no-store' }).then(r => r.text());
     const m = t.match(/const APP_VERSION = '([\d.]+)'/);
     if (!m) throw new Error('version');
     if (m[1] !== APP_VERSION) {
-      toast(`Mise à jour ${m[1]} trouvée : rechargement…`);
-      try { for (const k of await caches.keys()) await caches.delete(k); } catch { }
-      setTimeout(() => location.reload(), 900);
-    } else toast(`Tu as la dernière version (${APP_VERSION})`);
-  } catch { toast('Vérification impossible : es-tu hors connexion ?'); }
+      ui.upd = { st: 'new', v: m[1], t: hhmm() };
+      if (!silent) { toast(`Mise à jour ${m[1]} trouvée : rechargement…`); applyUpdate(); } else toast(`Mise à jour ${m[1]} disponible (Réglages > Mises à jour)`);
+    } else { ui.upd = { st: 'ok', v: APP_VERSION, t: hhmm() }; if (!silent) toast(`Application à jour : version ${APP_VERSION}`); }
+  } catch { ui.upd = { st: 'err', t: hhmm() }; if (!silent) toast('Vérification impossible : es-tu hors connexion ?'); }
+  if (ui.tab === 'regl' && !ui.ed) render();
+}
+async function applyUpdate() {
+  try { for (const k of await caches.keys()) await caches.delete(k); } catch { }
+  try { const rs = await navigator.serviceWorker?.getRegistrations(); for (const r of rs || []) await r.update(); } catch { }
+  setTimeout(() => location.reload(), 700);
 }
 
 /* ============ état ============ */
@@ -358,13 +366,32 @@ const GUIDE = [
   { c: 'exp', t: 'Trou dans le parcours', l: ['Reste factuel et bref : formation, congé parental, projet personnel, reconversion', 'Utilise les années plutôt que les mois si cela lisse l’ensemble', 'Prépare une réponse simple pour l’entretien'] },
   { c: 'formation', t: 'La formation', l: ['Diplôme le plus récent en premier, avec école et année', 'Inutile de lister le lycée à partir de bac+2', 'Mentionne un mémoire, une spécialité ou un projet seulement s’il est lié au poste', 'Formations courtes et certifications : dans leur section dédiée'] },
   { c: 'comp', t: 'Compétences et langues', l: ['6 à 12 compétences, choisies selon l’offre', 'Sépare techniques (outils, logiciels) et transversales', 'Évite les barres de niveau sans signification : préfère « avancé », « notions »', 'Langues avec niveau clair : A1–C2 ou courant, intermédiaire, notions'] },
+  { c: 'plus', t: 'Langues', l: ['Utilise l’échelle européenne A1 à C2, ou : notions, intermédiaire, courant, bilingue', 'Ajoute un test si tu en as un : TOEIC, TOEFL, IELTS, DELF, DELE, Goethe', 'Ne surévalue pas : l’entretien peut se tenir dans cette langue', 'La langue maternelle se précise seulement si elle n’est pas évidente'] },
+  { c: 'plus', t: 'Centres d’intérêt', p: 'Court (3 à 5 éléments), concret, et si possible utile : il montre une personnalité, pas un remplissage.', ba: [['Lecture, cinéma, voyages.', 'Football en club (capitaine depuis 3 ans), bénévole aux Restos du Cœur, randonnée en montagne.']] },
+  { c: 'plus', t: 'Certifications, permis, habilitations', l: ['Section dédiée avec intitulé, organisme et année', 'Permis B si le poste demande de se déplacer', 'Habilitations utiles au poste : SST, CACES, habilitation électrique, secourisme, sûreté', 'Retire ce qui est périmé ou sans rapport', 'Bénévolat et projets personnels : 1 ou 2 lignes avec un résultat'] },
+  { c: 'plus', t: 'Références', l: ['« Références disponibles sur demande » est inutile : on te les demandera', 'Prépare 2 personnes prêtes à répondre (ancien manager, tuteur) et préviens-les', 'Ne donne leurs coordonnées qu’à la demande du recruteur'] },
+  { c: 'forme', t: 'Mise en page lisible', l: ['Marges d’au moins 1,5 cm, texte entre 10 et 11 pt', 'Une ou deux polices maximum, une seule couleur d’accent', 'Titres de section bien visibles, gras réservé aux postes et diplômes', 'Espaces réguliers entre les blocs : le CV doit respirer', 'Exporte en PDF : la mise en page ne bouge pas chez le recruteur'] },
+  { c: 'forme', t: 'Longueur et densité', l: ['1 page jusqu’à 10 ans d’expérience, 2 pages au-delà', 'Une 2e page doit être au moins à moitié remplie, sinon resserre', 'Jamais de page 3', 'Option « Une seule page » : l’appli règle le texte pour toi', 'Supprime ce qui ne sert pas le poste visé'] },
+  { c: 'forme', t: 'Cohérence', l: ['Un seul format de dates partout : 09/2021 – 03/2024', 'Temps du passé pour les postes terminés, présent pour le poste actuel', 'Même ponctuation et même style de puces', 'Même ordre dans chaque expérience : poste, entreprise, lieu, dates'] },
+  { c: 'cas', t: 'Débutant, stage, alternance', l: ['Formation en premier, avec spécialité et projets marquants', 'Alternance : précise le rythme, la durée et les missions', 'Jobs d’été, bénévolat, associations : montre ta fiabilité', 'Indique ta disponibilité : dates de début, durée du stage'] },
+  { c: 'cas', t: 'Reconversion', l: ['Titre tourné vers le métier visé, pas vers l’ancien', 'Profil : explique le lien entre ton parcours et ce nouveau métier', 'Mets les compétences transférables en tête', 'Formation récente avant les expériences si elle est parlante', 'Condense les anciens postes qui n’ont pas de rapport'] },
+  { c: 'cas', t: 'Armée, police, fonction publique vers le privé', p: 'Le recruteur ne connaît pas toujours les grades, sigles et unités : traduis tout en compétences civiles.', l: ['« Chef de section » devient : encadrement de 25 personnes, planification, gestion de budget et de matériel', 'Remplace les sigles par des mots clairs, ou explique-les entre parenthèses', 'Décris des missions et des résultats : sécurité, logistique, formation, gestion de crise, relation avec des partenaires', 'Mets en avant diplômes, brevets, habilitations et formations reconnus dans le civil', 'Titre sous ton nom : le poste civil visé', 'Les armées proposent un accompagnement à la reconversion (Défense Mobilité) : renseigne-toi auprès de ton unité'] },
+  { c: 'cas', t: 'Plus de 15 ans d’expérience', l: ['Détaille surtout les 10 à 15 dernières années', 'Résume le début de carrière en une ligne par poste', 'Mets des réalisations chiffrées et des responsabilités (équipe, budget)', 'Le CV peut aller sur 2 pages', 'Garde des compétences à jour : outils récents, formations suivies'] },
+  { c: 'cas', t: 'CV en anglais', l: ['Traduis les titres : Work experience, Education, Skills, Languages', 'Pas de photo, d’âge ni de situation familiale dans les pays anglo-saxons', 'Adapte les diplômes : explique-les (ex. « Licence = Bachelor’s degree »)', 'Verbes d’action au passé pour les postes terminés', 'Une page est la norme aux États-Unis, une à deux au Royaume-Uni'] },
+  { c: 'lettre', t: 'La lettre de motivation', p: 'Une page maximum, 150 à 250 mots, écrite pour cette entreprise et pas une autre.', l: ['Paragraphe 1 : pourquoi cette entreprise et ce poste', 'Paragraphe 2 : pourquoi toi, avec 2 exemples chiffrés tirés de ton CV', 'Paragraphe 3 : ce que tu peux leur apporter, ta disponibilité, la demande d’entretien', 'Adresse-la à une personne si tu as son nom', 'Ne recopie pas ton CV : complète-le', 'Termine par une formule de politesse simple'] },
+  { c: 'lettre', t: 'Le mail de candidature', l: ['Objet clair : Candidature – Intitulé du poste – Prénom Nom', 'Corps en 3 à 5 lignes : poste visé, ce que tu apportes, pièces jointes', 'CV en PDF nommé Prenom_Nom_CV.pdf', 'Signature avec téléphone et lien LinkedIn', 'Relis et vérifie le destinataire avant d’envoyer'] },
+  { c: 'entretien', t: 'Préparer l’entretien', l: ['Relis l’offre et ton CV : tu dois pouvoir expliquer chaque ligne', 'Renseigne-toi sur l’entreprise : activité, clients, actualité', 'Prépare 3 réalisations à raconter avec la méthode STAR', 'Prépare 3 questions à poser : équipe, missions, évolution', 'Vérifie le trajet, l’heure et la tenue la veille'] },
+  { c: 'entretien', t: 'La méthode STAR', p: 'Pour répondre à « Parlez-moi d’une situation où… » en 1 à 2 minutes.', l: ['Situation : le contexte en une phrase', 'Tâche : ton rôle et l’objectif', 'Action : ce que tu as fait, toi, étape par étape', 'Résultat : le chiffre ou l’effet concret obtenu'] },
+  { c: 'entretien', t: 'Questions classiques', l: ['« Parlez-moi de vous » : 1 à 2 minutes : présent, passé, ce que tu cherches', '« Pourquoi nous ? » : cite des éléments précis de l’entreprise', '« Points forts, points faibles » : un exemple vrai, et ce que tu fais pour progresser', '« Prétentions salariales » : donne une fourchette basée sur le marché du poste', '« Pourquoi quitter votre poste ? » : reste positif, parle de ce que tu cherches', 'Après : un mail de remerciement sous 24 h'] },
+  { c: 'web', t: 'LinkedIn', l: ['Photo sobre, titre qui décrit ce que tu fais et pour qui, pas seulement ton poste', 'Résumé court avec les mots-clés de ton métier', 'Expériences cohérentes avec ton CV, avec des réalisations', 'Compétences et recommandations : demande-en 2 ou 3', 'URL personnalisée à mettre dans l’en-tête du CV'] },
+  { c: 'web', t: 'Image en ligne et recherche d’emploi', l: ['Cherche ton nom sur un moteur de recherche : les recruteurs le font', 'Passe en privé les profils personnels qui ne servent pas', 'Adresse mail sérieuse : prenom.nom@…', 'Combine annonces (France Travail, Indeed, Apec, LinkedIn), candidatures spontanées et réseau', 'Crée des alertes, parle de ta recherche autour de toi : beaucoup de postes se trouvent par recommandation'] },
   { c: 'ats', t: 'Passer les filtres automatiques (ATS)', p: 'Beaucoup d’entreprises trient les CV avec un logiciel avant lecture humaine.', l: ['Modèle simple, polices standards, pas de texte dans des images', 'Titres de section classiques : Expériences, Formation, Compétences', 'Reprends les mots-clés de l’offre tels quels (outil Offre)', 'Envoie un PDF avec du texte sélectionnable, pas une capture', 'Nomme le fichier : Prenom_Nom_CV.pdf'] },
   { c: 'erreurs', t: 'Erreurs fréquentes', l: ['Fautes d’orthographe : relis à voix haute, fais relire', 'Mots creux : dynamique, motivé, sérieux', 'Trop long, trop dense, trop de couleurs', 'Dates incohérentes, infos périmées, liens cassés', 'Mentir ou gonfler : ça se vérifie, et ça se paie en entretien'] },
   { c: 'candidature', t: 'Adapter son CV à chaque offre', l: ['Relis l’annonce et repère 5 à 8 mots-clés', 'Remonte les compétences et puces qui y répondent', 'Adapte le titre sous ton nom au poste visé', 'L’onglet Offre fait ce travail : colle l’annonce, regarde le score, crée une version'] },
   { c: 'candidature', t: 'Relancer', l: ['Compte 7 à 10 jours après l’envoi', 'Message court, poli, qui rappelle le poste visé', 'Note la date de relance dans l’onglet Suivi'] },
 ];
-const GCATS = [['essentiel', 'Essentiel'], ['infos', 'En-tête'], ['profil', 'Profil'], ['exp', 'Expériences'], ['formation', 'Formation'], ['comp', 'Compétences'], ['ats', 'Filtres ATS'], ['erreurs', 'Erreurs'], ['candidature', 'Candidature']];
-const CHECKLIST = ['Orthographe relue (et relue par quelqu’un d’autre)', 'Titre adapté au poste visé', 'Chiffres dans les expériences récentes', 'Mots-clés de l’offre présents', 'Email et téléphone corrects', '1 page (2 maximum)', 'PDF lisible, texte sélectionnable', 'Nom du fichier : Prenom_Nom_CV.pdf'];
+const GCATS = [['essentiel', 'Essentiel'], ['infos', 'En-tête'], ['profil', 'Profil'], ['exp', 'Expériences'], ['formation', 'Formation'], ['comp', 'Compétences'], ['plus', 'Langues, loisirs'], ['forme', 'Mise en page'], ['cas', 'Situations'], ['ats', 'Filtres ATS'], ['erreurs', 'Erreurs'], ['candidature', 'Candidature'], ['lettre', 'Lettre, mail'], ['entretien', 'Entretien'], ['web', 'LinkedIn, web']];
+const CHECKLIST = ['Lettre ou mail personnalisé pour cette entreprise', 'Orthographe relue (et relue par quelqu’un d’autre)', 'Titre adapté au poste visé', 'Chiffres dans les expériences récentes', 'Mots-clés de l’offre présents', 'Email et téléphone corrects', '1 page (2 maximum)', 'PDF lisible, texte sélectionnable', 'Nom du fichier : Prenom_Nom_CV.pdf'];
 
 /* ============ interface ============ */
 const app = $('#app');
@@ -383,7 +410,8 @@ function renderNav() {
 }
 function render() {
   const y = window.scrollY, fs = $('.edform')?.scrollTop || 0, ls = $('#lps')?.scrollTop || 0;
-  renderNav();
+  renderNav(); document.body.classList.toggle('demo', !!S.demo);
+  let db = $('#demobar'); if (S.demo) { if (!db) { db = document.createElement('div'); db.id = 'demobar'; document.body.appendChild(db); } db.innerHTML = '<span>Mode démo · données fictives</span><button data-act="demoquit">Quitter la démo</button>'; } else if (db) db.remove();
   app.innerHTML = ui.ed && curCV() ? viewEditor(curCV()) : ({ cv: tabCV, offre: tabOffre, suivi: tabSuivi, guide: tabGuide, regl: tabRegl }[ui.tab])();
   window.scrollTo(0, y);
   if (ui.ed && curCV()) {
@@ -409,7 +437,7 @@ function tabCV() {
   <div class="top"><span class="app">CV en poche</span><span class="chip">${S.jobs.length} candidature${S.jobs.length > 1 ? 's' : ''}</span></div>
   <section class="card hero"><div class="lbl">Mes CV</div><div class="big">${n}</div>
     <div class="sub">${n ? 'Touche un CV pour le modifier, ou importe-en un nouveau.' : 'Importe ton CV actuel en PDF : chaque rubrique devient modifiable.'}</div>
-    <div class="row2"><button class="btn solid" data-act="importpdf">Importer un PDF</button><button class="btn" data-act="newcv">Nouveau CV</button></div></section>
+    <div class="row2"><button class="btn solid" data-act="importpdf">Importer un PDF</button><button class="btn" data-act="newcv">Nouveau CV</button></div>${S.demo ? '' : '<button class="btn ghost sm" data-act="demo" style="margin-top:10px">Essayer le mode démo</button>'}</section>
   ${n ? S.cvs.slice().sort((a, b) => b.updated - a.updated).map(cvCard).join('') : `<div class="card empty"><b>Rien pour l’instant</b><div class="small">Tes CV restent sur ton téléphone : pas de compte, pas de pub, pas d’envoi.</div></div>`}
   </div>`;
 }
@@ -569,6 +597,7 @@ function jobSheet(j) {
   <label class="f">CV envoyé<select data-u="jd.cvId"><option value="">—</option>${S.cvs.map(c => `<option value="${c.id}" ${j.cvId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label></div>
   <div class="grid2"><label class="f">Date d’envoi<input type="date" data-u="jd.date" value="${esc(j.date)}"></label><label class="f">Relance prévue<input type="date" data-u="jd.relance" value="${esc(j.relance)}"></label></div>
   <label class="f">Notes<textarea data-u="jd.notes" rows="3">${esc(j.notes)}</textarea></label>
+  ${j.offre ? `<button class="btn ghost" data-act="jobanalyze" data-id="${j.id}">Relire et analyser l’annonce</button>` : ''}
   <div class="row2"><button class="btn" data-act="savejob" style="flex:1">Enregistrer</button>${j.created ? `<button class="btn danger" data-act="deljob" data-id="${j.id}">Supprimer</button>` : ''}${j.url ? `<a class="btn ghost" href="${esc(j.url)}" target="_blank" rel="noopener" style="text-decoration:none;text-align:center">Voir l’annonce</a>` : ''}</div>`);
 }
 const newJob = () => ({ id: uid(), poste: '', entreprise: '', url: '', statut: 'aenvoyer', cvId: S.cvs[0]?.id || '', date: '', relance: '', notes: '', offre: '', created: 0 });
@@ -593,14 +622,14 @@ function tabRegl() {
   if (t === 'cv') body = `<div class="card"><h2>Modèle par défaut</h2><div class="seg">${TPLS.map(([k, n]) => `<button class="${s.tpl === k ? 'on' : ''}" data-act="set" data-k="tpl" data-v="${k}">${n}</button>`).join('')}</div>
    <h2>Couleur par défaut</h2><div class="pal">${ACCENTS.map(c => `<button class="${s.cvAccent === c ? 'on' : ''}" style="background:${c}" data-act="set" data-k="cvAccent" data-v="${c}"></button>`).join('')}</div>
    <h2>Police par défaut</h2>${seg('font', [['sans', 'Sans empattement'], ['serif', 'Avec empattement']])}<div class="small muted">S’applique aux nouveaux CV.</div></div>`;
-  if (t === 'data') { const kb = Math.round(JSON.stringify(S).length / 1024); body = `<div class="card"><h2>Sauvegarde</h2><div class="small muted">Tout est stocké sur cet appareil (${kb} Ko). Exporte régulièrement un fichier pour ne rien perdre ou pour passer d’un téléphone à l’autre.</div>
+  if (t === 'data') { const kb = Math.round(JSON.stringify(S).length / 1024); body = `<div class="card"><h2>Mode démo</h2><div class="small muted">Charge un faux CV, de vraies annonces et un suivi complet pour tout essayer. Tes données sont mises de côté et reviennent quand tu quittes la démo.</div>${S.demo ? '<button class="btn" data-act="demoquit">Quitter la démo</button>' : '<button class="btn ghost" data-act="demo">Lancer la démo</button>'}</div><div class="card"><h2>Sauvegarde</h2><div class="small muted">Tout est stocké sur cet appareil (${kb} Ko). Exporte régulièrement un fichier pour ne rien perdre ou pour passer d’un téléphone à l’autre.</div>
    <button class="btn" data-act="expjson">Exporter mes données</button><button class="btn ghost" data-act="impjson">Importer un fichier</button></div>
    <div class="card"><h2>Zone dangereuse</h2><button class="btn danger" data-act="resetall">Tout effacer</button></div>`; }
   if (t === 'about') body = `<div class="card"><h2>CV en poche</h2><div class="small">Gratuit, sans publicité, sans compte, hors connexion. Tes CV ne quittent jamais ton appareil : la lecture des PDF se fait sur ton téléphone.</div>
    <div class="small muted">Import PDF : la lecture est automatique mais pas parfaite, vérifie toujours le résultat. Les PDF scannés (images) ne sont pas lisibles.</div>
    <div class="small muted">Astuce : pour enregistrer en PDF, ouvre l’aperçu puis « Imprimer / PDF » et choisis « Enregistrer au format PDF ». Sur iPhone, ouvre l’appli dans Safari si l’impression ne s’ouvre pas.</div></div>`;
-  if (t === 'maj') body = `<div class="card"><h2>Version ${APP_VERSION}</h2><div class="small muted">Dernière mise à jour : ${CHANGELOG[0].d}</div><button class="btn" data-act="checkupd">Vérifier les mises à jour</button></div>
-   ${CHANGELOG.map(c => `<div class="card tip"><h3>Version ${c.v} <span class="chip">${c.d}</span></h3><ul>${c.l.map(x => `<li>${x}</li>`).join('')}</ul></div>`).join('')}`;
+  if (t === 'maj') { const u = ui.upd || {}; const stat = u.st === 'ok' ? `<div class="updst ok">✅ Application à jour · version ${APP_VERSION}<small>Vérifié à ${u.t}</small></div>` : u.st === 'new' ? `<div class="updst nw">⬆ Mise à jour disponible · version ${u.v}<small>Tu as la version ${APP_VERSION}</small><button class="btn sm" data-act="applyupd">Mettre à jour maintenant</button></div>` : u.st === 'err' ? `<div class="updst er">Vérification impossible (hors connexion ?)<small>Version installée : ${APP_VERSION}</small></div>` : `<div class="updst">Vérification…</div>`; body = `<div class="card"><h2>Version ${APP_VERSION}</h2>${stat}<div class="small muted">Dernière mise à jour : ${CHANGELOG[0].d}</div><button class="btn" data-act="checkupd">Vérifier les mises à jour</button></div>
+   ${CHANGELOG.map(c => `<div class="card tip"><h3>Version ${c.v} <span class="chip">${c.d}</span></h3><ul>${c.l.map(x => `<li>${x}</li>`).join('')}</ul></div>`).join('')}`; }
   return `<div class="wrap"><div class="top"><span class="app">Réglages</span><span class="chip">v${APP_VERSION}</span></div>
   <div class="scrollx vt">${[['app', 'Apparence'], ['cv', 'Modèles'], ['data', 'Données'], ['maj', 'Mises à jour'], ['about', 'À propos']].map(([k, l]) => `<button class="${t === k ? 'on' : ''}" data-act="stab" data-v="${k}">${l}</button>`).join('')}</div>${body}</div>`;
 }
@@ -685,7 +714,7 @@ function openCrop(src) {
   im.onload = () => {
     ui.crop = { im, w: im.naturalWidth, h: im.naturalHeight, x: 0, y: 0, z: 1 };
     openSheet(`<div class="sh"><h2>Recadrer la photo</h2><button class="ib" data-act="closesheet">✕</button></div>
-     <div class="small muted">Appuie longtemps sur la photo puis glisse pour la déplacer. Le cercle montre ce qui sera visible.</div>
+     <div class="small muted">Glisse la photo pour la déplacer (appui long possible), pince avec deux doigts ou utilise le curseur pour zoomer. Le cercle montre ce qui sera visible.</div>
      <div id="cropf"><img id="cropi" src="${src}" alt="" draggable="false"></div>
      <label class="f">Zoom<input type="range" id="cropz" min="1" max="3" step="0.01" value="1"></label>
      <div class="row2"><button class="btn ghost" data-act="closesheet" style="flex:1">Annuler</button><button class="btn" data-act="cropok" style="flex:1">Valider</button></div>`);
@@ -701,20 +730,39 @@ function cropApply() {
 }
 let cg = null;
 document.addEventListener('pointerdown', e => {
+  if (e.pointerType !== 'mouse') return;
   const f = e.target.closest('#cropf'); if (!f || !ui.crop) return;
   cg = { sx: e.clientX, sy: e.clientY, ox: ui.crop.x, oy: ui.crop.y, on: e.pointerType === 'mouse' };
   if (cg.on) f.classList.add('grab');
   else cg.t = setTimeout(() => { if (cg) { cg.on = true; f.classList.add('grab'); navigator.vibrate?.(20); } }, 280);
 });
 document.addEventListener('pointermove', e => {
-  if (!cg) return;
+  if (!cg || e.pointerType !== 'mouse') return;
   const dx = e.clientX - cg.sx, dy = e.clientY - cg.sy;
   if (!cg.on) { if (Math.hypot(dx, dy) > 10) { clearTimeout(cg.t); cg = null; } return; }
   ui.crop.x = cg.ox + dx; ui.crop.y = cg.oy + dy; cropApply();
 });
 const cgEnd = () => { if (cg) { clearTimeout(cg.t); cg = null; $('#cropf')?.classList.remove('grab'); } };
-document.addEventListener('pointerup', cgEnd); document.addEventListener('pointercancel', cgEnd);
-document.addEventListener('touchmove', e => { if (cg && cg.on) e.preventDefault(); }, { passive: false });
+document.addEventListener('pointerup', e => { if (e.pointerType === 'mouse') cgEnd(); });
+/* tactile (iPhone / iPad) : événements touch, plus fiables que les pointeurs */
+const cropClamp = z => Math.max(1, Math.min(3, z));
+document.addEventListener('touchstart', e => {
+  const f = e.target.closest('#cropf'); if (!f || !ui.crop) return;
+  const t = e.touches;
+  if (t.length === 2) { clearTimeout(cg && cg.t); cg = { pinch: true, d0: Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY) || 1, z0: ui.crop.z }; f.classList.add('grab'); return; }
+  const p = t[0]; cg = { sx: p.clientX, sy: p.clientY, ox: ui.crop.x, oy: ui.crop.y, on: false };
+  cg.t = setTimeout(() => { if (cg && !cg.pinch) { cg.on = true; f.classList.add('grab'); navigator.vibrate?.(20); } }, 250);
+}, { passive: true });
+document.addEventListener('touchmove', e => {
+  if (!cg || !e.target.closest('#cropf')) return;
+  e.preventDefault(); const t = e.touches;
+  if (cg.pinch) { if (t.length < 2) return; ui.crop.z = cropClamp(cg.z0 * Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY) / cg.d0); const z = $('#cropz'); if (z) z.value = ui.crop.z; cropApply(); return; }
+  const p = t[0], dx = p.clientX - cg.sx, dy = p.clientY - cg.sy;
+  if (!cg.on && Math.hypot(dx, dy) > 4) { cg.on = true; clearTimeout(cg.t); $('#cropf')?.classList.add('grab'); }
+  if (cg.on) { ui.crop.x = cg.ox + dx; ui.crop.y = cg.oy + dy; cropApply(); }
+}, { passive: false });
+document.addEventListener('touchend', e => { if (cg && (!e.touches.length)) cgEnd(); });
+document.addEventListener('touchcancel', () => cgEnd());
 document.addEventListener('input', e => { if (e.target.id === 'cropz' && ui.crop) { ui.crop.z = +e.target.value; cropApply(); } });
 function cropSave() {
   const c = ui.crop, cv = curCV(); if (!c || !cv) return;
@@ -771,19 +819,30 @@ function ddEnd(ok) {
   dd = null;
 }
 document.addEventListener('pointerdown', e => {
+  if (e.pointerType !== 'mouse') return;
   const row = e.target.closest('.dragc'); if (!row || e.target.closest('button')) return;
-  const handle = !!e.target.closest('.gp');
   dd = { row, px: e.clientX, py: e.clientY, on: false };
-  dd.t = setTimeout(() => { if (dd && !dd.on) ddStart(); }, e.pointerType === 'mouse' || handle ? 60 : 380);
+  dd.t = setTimeout(() => { if (dd && !dd.on) ddStart(); }, 60);
 });
+document.addEventListener('touchstart', e => {
+  const row = e.target.closest('.dragc'); if (!row || e.target.closest('button')) return;
+  const p = e.touches[0], handle = !!e.target.closest('.gp');
+  dd = { row, px: p.clientX, py: p.clientY, on: false };
+  dd.t = setTimeout(() => { if (dd && !dd.on) ddStart(); }, handle ? 60 : 350);
+}, { passive: true });
+document.addEventListener('touchmove', e => {
+  if (!dd) return; const p = e.touches[0];
+  if (!dd.on) { if (Math.hypot(p.clientX - dd.px, p.clientY - dd.py) > 10) { clearTimeout(dd.t); dd = null; } return; }
+  e.preventDefault(); ddMove(p.clientX, p.clientY);
+}, { passive: false });
+document.addEventListener('touchend', () => ddEnd(true));
+document.addEventListener('touchcancel', () => { const on = dd && dd.on; ddEnd(false); if (on) render(); });
 document.addEventListener('pointermove', e => {
-  if (!dd) return;
+  if (!dd || e.pointerType !== 'mouse') return;
   if (!dd.on) { if (Math.hypot(e.clientX - dd.px, e.clientY - dd.py) > 10) { clearTimeout(dd.t); dd = null; } return; }
   ddMove(e.clientX, e.clientY);
 });
-document.addEventListener('pointerup', () => ddEnd(true));
-document.addEventListener('pointercancel', () => { if (dd && !dd.on) dd = null; });
-document.addEventListener('touchmove', e => { if (dd && dd.on) e.preventDefault(); }, { passive: false });
+document.addEventListener('pointerup', e => { if (e.pointerType === 'mouse') ddEnd(true); });
 document.addEventListener('contextmenu', e => { if (e.target.closest('.dragc,#cropf')) e.preventDefault(); });
 
 /* ---- Auto ---- */
@@ -799,6 +858,100 @@ function autoLayout() {
   Object.assign(cv, { tpl: best.t, cols: false, scale: 1, order: base.order, col: {}, sz: {}, show: base.show });
   touch(cv); render();
   toast(`Auto : modèle ${TPLS.find(x => x[0] === best.t)[1]}${cv.one ? `, texte à ${Math.round(best.r.sc * 100)} %` : ''}${hid.length ? `, masqué : ${hid.join(', ')}` : ''}${cv.one && !best.r.fit ? ' (ne tient toujours pas sur 1 page)' : ''}`);
+}
+
+
+/* ============ mode démo ============ */
+const OFFRES = [
+  { poste: 'Chargé(e) de communication digitale', ent: 'Maison Verdier', txt: `Maison Verdier, entreprise familiale lyonnaise de 80 salariés (vins et spiritueux), recrute un(e) Chargé(e) de communication digitale en CDI.
+
+Vos missions
+- Définir et animer la stratégie éditoriale sur les réseaux sociaux (Instagram, LinkedIn, Facebook)
+- Rédiger et planifier les contenus : posts, newsletters, articles de blog
+- Piloter les campagnes d'emailing et analyser leurs résultats
+- Suivre les indicateurs d'audience avec Google Analytics et proposer des optimisations
+- Coordonner les prestataires (photographes, agence de création)
+- Assurer la veille concurrentielle
+
+Votre profil
+- Bac+5 en communication ou marketing digital
+- 3 ans d'expérience minimum sur un poste similaire
+- Maîtrise de Canva et de la Suite Adobe
+- Excellente expression écrite, esprit de synthèse, autonomie
+- Anglais courant apprécié
+
+Nous vous offrons : télétravail 2 jours par semaine, mutuelle prise en charge à 100 %, 5 semaines de congés supplémentaires.` },
+  { poste: 'Chef de projet digital', ent: 'Nord Digital', txt: `Nord Digital, agence web de 35 personnes à Lille, recherche un(e) Chef de projet digital.
+
+Au sein de l'équipe projets, vous êtes l'interlocuteur(trice) de nos clients grands comptes et pilotez la production de leurs sites et applications.
+
+Missions
+- Recueillir et formaliser les besoins clients, rédiger les cahiers des charges
+- Planifier et coordonner 10 à 15 projets par an avec les équipes design et développement
+- Suivre le budget, les délais et la qualité des livrables
+- Animer les réunions de lancement et de suivi, rédiger les comptes rendus
+- Veiller à la satisfaction client et proposer des évolutions
+
+Profil recherché
+- Formation Bac+4/5 en gestion de projet, communication ou école de commerce
+- Expérience de 4 ans en gestion de projet web ou en agence
+- Méthodes agiles (Scrum, Kanban), outils Jira et Notion
+- Aisance relationnelle, rigueur, sens de l'organisation
+- Anglais professionnel
+
+Poste en CDI, rémunération selon profil, tickets restaurant, prime annuelle.` },
+  { poste: 'Responsable communication', ent: 'Mairie de Caluire', txt: `La Ville de Caluire-et-Cuire (43 000 habitants) recrute un(e) Responsable de la communication, cadre d'emplois des attachés territoriaux, par voie statutaire ou contractuelle.
+
+Rattaché(e) à la Direction générale, vous encadrez une équipe de 3 agents.
+
+Missions principales
+- Élaborer et mettre en œuvre le plan de communication de la collectivité
+- Superviser le magazine municipal, le site internet et les réseaux sociaux
+- Organiser les événements et cérémonies officielles
+- Gérer les relations avec la presse
+- Piloter le budget communication et les marchés publics associés
+
+Compétences attendues
+- Expérience confirmée en communication institutionnelle ou en agence
+- Excellente maîtrise rédactionnelle
+- Connaissance de l'environnement des collectivités territoriales
+- Capacité à encadrer et à coordonner une équipe
+- Disponibilité ponctuelle en soirée et le week-end
+
+Candidatures (CV et lettre de motivation) avant le 30 du mois.` },
+];
+const dIso = n => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
+function demoState() {
+  const c1 = newCV('CV Communication (démo)', sampleData()); c1.tpl = 'classique';
+  const c2 = newCV('CV Chef de projet digital (démo)', sampleData()); c2.tpl = 'moderne'; c2.accent = '#0F7C9D';
+  c2.data.identity.titre = 'Chef de projet digital'; c2.data.resume = 'Chargée de communication digitale, j’ai piloté 12 projets web par an pour des clients grands comptes, dans les délais et le budget. Je cherche un poste de chef de projet digital en agence.';
+  c2.data.competences.push(...['Gestion de projet', 'Méthodes agiles', 'Jira', 'Cahier des charges'].map(n => ({ id: uid(), on: true, nom: n, niveau: 0 })));
+  c1.updated = Date.now() - 1000; c2.updated = Date.now();
+  const J = (o, i, p) => ({ id: uid(), poste: o.poste, entreprise: o.ent, url: '', statut: 'aenvoyer', cvId: c1.id, date: '', relance: '', notes: '', offre: o.txt || '', created: Date.now() - 864e5 * (p.age || 3), ...p });
+  const jobs = [
+    J(OFFRES[0], 0, { statut: 'entretien', date: dIso(-9), notes: 'Entretien RH jeudi à 14 h. Préparer 3 exemples chiffrés (méthode STAR) et 3 questions à poser.', url: 'https://exemple.fr/offre-maison-verdier', age: 10 }),
+    J(OFFRES[1], 1, { statut: 'envoyee', cvId: c2.id, date: dIso(-6), relance: dIso(2), notes: 'Envoyé avec la version « Chef de projet digital ».', age: 7 }),
+    J(OFFRES[2], 2, { statut: 'aenvoyer', notes: 'Date limite dans 5 jours. Lettre de motivation à écrire.', age: 1 }),
+    J({ poste: 'Community manager senior', ent: 'Studio Mireille' }, 3, { statut: 'offre', date: dIso(-20), notes: 'Proposition reçue : réponse attendue sous 7 jours, salaire à négocier.', age: 21 }),
+    J({ poste: 'Chargée de marque', ent: 'Groupe Altéa' }, 4, { statut: 'refus', date: dIso(-30), notes: 'Refus après entretien : profil jugé trop junior. Demander un retour.', age: 31 }),
+    J({ poste: 'Responsable réseaux sociaux', ent: 'Les Jardins du Rhône' }, 5, { statut: 'envoyee', date: dIso(-3), relance: dIso(4), age: 4 }),
+  ];
+  return { cvs: [c1, c2], jobs, checks: { 0: true, 1: true, 2: true, 4: true }, demo: true };
+}
+function demoOn() {
+  if (S.demo) return;
+  try { localStorage.setItem(KEY + '.real', JSON.stringify(S)); } catch (e) { toast('Stockage plein : impossible de lancer la démo'); return; }
+  const set = S.set; S = { ...defaults(), ...demoState(), set }; saveNow();
+  const o = OFFRES[0], cv = S.cvs[0];
+  ui.ed = null; ui.tab = 'cv'; ui.offre = { text: o.txt, cvId: cv.id, entreprise: o.ent, poste: o.poste, res: analyzeOffer(o.txt, cv), mask: true, settitle: false };
+  closeSheet(); render(); scrollTo(0, 0); toast('Mode démo : données fictives');
+}
+function demoOff() {
+  let real = null; try { real = JSON.parse(localStorage.getItem(KEY + '.real')); } catch (e) { }
+  const d = defaults(); S = real && Array.isArray(real.cvs) ? { ...d, ...real, set: { ...d.set, ...(real.set || {}) } } : { ...d, set: S.set };
+  delete S.demo; try { localStorage.removeItem(KEY + '.real'); } catch (e) { }
+  saveNow(); ui.ed = null; ui.tab = 'cv'; ui.offre = { text: '', cvId: '', entreprise: '', poste: '', res: null, mask: true, settitle: false };
+  $('#prev')?.remove(); closeSheet(); applySettings(); render(); scrollTo(0, 0); toast('Démo quittée : tes données sont revenues');
 }
 
 /* ============ événements ============ */
@@ -878,11 +1031,15 @@ const ACT = {
   cl: (v, el) => { const n = el.dataset.n; S.checks[n] = !S.checks[n]; save(); render(); },
   clreset: () => { S.checks = {}; save(); render(); },
   stab: v => { ui.stab = v; render(); },
+  demo: () => demoOn(),
+  demoquit: () => demoOff(),
+  jobanalyze: (v, el) => { const j = S.jobs.find(x => x.id === el.dataset.id); if (!j) return; const cv = S.cvs.find(c => c.id === j.cvId) || S.cvs[0]; if (!cv) return; ui.offre = { text: j.offre, cvId: cv.id, entreprise: j.entreprise, poste: j.poste, res: analyzeOffer(j.offre, cv), mask: true, settitle: false }; closeSheet(); ui.tab = 'offre'; ui.ed = null; render(); scrollTo(0, 0); },
   set: (v, el) => { S.set[el.dataset.k] = v; save(); applySettings(); render(); },
   checkupd: () => checkUpdate(),
+  applyupd: () => applyUpdate(),
   expjson: () => download('cv-en-poche-sauvegarde.json', JSON.stringify(S), 'application/json'),
   impjson: () => $('#fJson').click(),
-  resetall: () => { if (!confirm('Effacer tous les CV, candidatures et réglages ?') || !confirm('Dernière confirmation : cette action est définitive.')) return; S = defaults(); saveNow(); ui.ed = null; applySettings(); render(); },
+  resetall: () => { if (S.demo) { demoOff(); return; } if (!confirm('Effacer tous les CV, candidatures et réglages ?') || !confirm('Dernière confirmation : cette action est définitive.')) return; S = defaults(); saveNow(); ui.ed = null; applySettings(); render(); },
 };
 document.addEventListener('click', e => {
   if (e.target.id === 'sheetbg') { closeSheet(); return; }
@@ -897,6 +1054,7 @@ function download(name, text, type) {
 }
 async function importJson(file) {
   try {
+    if (S.demo) { toast('Quitte d’abord la démo'); return; }
     const j = JSON.parse(await file.text()); if (!j || !Array.isArray(j.cvs)) throw 0;
     const merge = confirm('OK = fusionner avec tes données actuelles\nAnnuler = tout remplacer');
     if (merge) { const ids = new Set(S.cvs.map(c => c.id)); j.cvs.forEach(c => { if (!ids.has(c.id)) S.cvs.push(c); }); const jid = new Set(S.jobs.map(x => x.id)); (j.jobs || []).forEach(x => { if (!jid.has(x.id)) S.jobs.push(x); }); }
@@ -921,4 +1079,5 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applySet
 
 applySettings();
 render();
+checkUpdate(true);
 if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => { }));
