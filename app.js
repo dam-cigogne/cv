@@ -21,6 +21,27 @@ const SIDE = ['competences', 'langues', 'loisirs'];
 const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretien', 'Entretien'], ['offre', 'Offre reçue'], ['refus', 'Refus']];
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
+/* ============ version et historique des mises à jour ============ */
+const APP_VERSION = '1.2.0';
+const CHANGELOG = [
+  { v: '1.2.0', d: '01/11/2026', l: ['Version de l’appli et liste des mises à jour dans Réglages', 'Bouton « Vérifier les mises à jour »'] },
+  { v: '1.1.0', d: '01/11/2026', l: ['Import PDF amélioré : nom sur plusieurs lignes, titre dans la colonne de droite, ville après le code postal, puces détectées par l’indentation, formations en liste, « Informations complémentaires » classées', 'Nouvelle rubrique « Domaines de compétences » (sous-titres et puces)', 'Mise à jour automatique : l’appli prend toujours la dernière version quand le réseau est là, et reste utilisable hors connexion'] },
+  { v: '1.0.1', d: '01/11/2026', l: ['Correctif : import de PDF qui ne démarrait pas (fichiers de lecture mal placés)'] },
+  { v: '1.0.0', d: '01/11/2026', l: ['Première version : Mes CV, éditeur, 5 modèles, export PDF', 'Import d’un PDF avec lecture automatique des rubriques', 'Offre : analyse d’annonce et version adaptée', 'Suivi des candidatures, Guide du CV, Réglages en onglets'] },
+];
+async function checkUpdate() {
+  try {
+    const t = await fetch('app.js', { cache: 'no-store' }).then(r => r.text());
+    const m = t.match(/const APP_VERSION = '([\d.]+)'/);
+    if (!m) throw new Error('version');
+    if (m[1] !== APP_VERSION) {
+      toast(`Mise à jour ${m[1]} trouvée : rechargement…`);
+      try { for (const k of await caches.keys()) await caches.delete(k); } catch { }
+      setTimeout(() => location.reload(), 900);
+    } else toast(`Tu as la dernière version (${APP_VERSION})`);
+  } catch { toast('Vérification impossible : es-tu hors connexion ?'); }
+}
+
 /* ============ état ============ */
 const KEY = 'cvpoche.v1';
 const defaults = () => ({ cvs: [], jobs: [], checks: {}, set: { theme: 'auto', accent: '#1F5BD8', size: 'normal', filt: 'top', tpl: 'classique', cvAccent: '#1F5BD8', font: 'sans' } });
@@ -523,8 +544,10 @@ function tabRegl() {
   if (t === 'about') body = `<div class="card"><h2>CV en poche</h2><div class="small">Gratuit, sans publicité, sans compte, hors connexion. Tes CV ne quittent jamais ton appareil : la lecture des PDF se fait sur ton téléphone.</div>
    <div class="small muted">Import PDF : la lecture est automatique mais pas parfaite, vérifie toujours le résultat. Les PDF scannés (images) ne sont pas lisibles.</div>
    <div class="small muted">Astuce : pour enregistrer en PDF, ouvre l’aperçu puis « Imprimer / PDF » et choisis « Enregistrer au format PDF ». Sur iPhone, ouvre l’appli dans Safari si l’impression ne s’ouvre pas.</div></div>`;
-  return `<div class="wrap"><div class="top"><span class="app">Réglages</span></div>
-  <div class="scrollx">${[['app', 'Apparence'], ['cv', 'Modèles'], ['data', 'Données'], ['about', 'À propos']].map(([k, l]) => `<button class="${t === k ? 'on' : ''}" data-act="stab" data-v="${k}">${l}</button>`).join('')}</div>${body}</div>`;
+  if (t === 'maj') body = `<div class="card"><h2>Version ${APP_VERSION}</h2><div class="small muted">Dernière mise à jour : ${CHANGELOG[0].d}</div><button class="btn" data-act="checkupd">Vérifier les mises à jour</button></div>
+   ${CHANGELOG.map(c => `<div class="card tip"><h3>Version ${c.v} <span class="chip">${c.d}</span></h3><ul>${c.l.map(x => `<li>${x}</li>`).join('')}</ul></div>`).join('')}`;
+  return `<div class="wrap"><div class="top"><span class="app">Réglages</span><span class="chip">v${APP_VERSION}</span></div>
+  <div class="scrollx">${[['app', 'Apparence'], ['cv', 'Modèles'], ['data', 'Données'], ['maj', 'Mises à jour'], ['about', 'À propos']].map(([k, l]) => `<button class="${t === k ? 'on' : ''}" data-act="stab" data-v="${k}">${l}</button>`).join('')}</div>${body}</div>`;
 }
 
 /* ============ aperçu / impression ============ */
@@ -672,6 +695,7 @@ const ACT = {
   clreset: () => { S.checks = {}; save(); render(); },
   stab: v => { ui.stab = v; render(); },
   set: (v, el) => { S.set[el.dataset.k] = v; save(); applySettings(); render(); },
+  checkupd: () => checkUpdate(),
   expjson: () => download('cv-en-poche-sauvegarde.json', JSON.stringify(S), 'application/json'),
   impjson: () => $('#fJson').click(),
   resetall: () => { if (!confirm('Effacer tous les CV, candidatures et réglages ?') || !confirm('Dernière confirmation : cette action est définitive.')) return; S = defaults(); saveNow(); ui.ed = null; applySettings(); render(); },
