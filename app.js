@@ -542,8 +542,8 @@ function printCV(cv) {
 async function importPdf(file) {
   toast('Lecture du PDF…');
   try {
-    const pdfjs = await import('./lib/pdf.min.mjs');
-    pdfjs.GlobalWorkerOptions.workerSrc = new URL('./lib/pdf.worker.min.mjs', import.meta.url).href;
+    const pdfjs = await import('./pdf.min.mjs');
+    pdfjs.GlobalWorkerOptions.workerSrc = new URL('./pdf.worker.min.mjs', import.meta.url).href;
     const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
     const pages = [];
     for (let n = 1; n <= Math.min(doc.numPages, 6); n++) {

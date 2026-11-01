@@ -1,6 +1,6 @@
 // Service worker : fonctionne hors connexion (précache + cache d'exécution pour les polices).
 const V = 'cvpoche-v1';
-const FILES = ['./', 'index.html', 'style.css', 'app.js', 'parser.js', 'manifest.json', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'lib/pdf.min.mjs', 'lib/pdf.worker.min.mjs'];
+const FILES = ['./', 'index.html', 'style.css', 'app.js', 'parser.js', 'manifest.json', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'pdf.min.mjs', 'pdf.worker.min.mjs'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(V).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
