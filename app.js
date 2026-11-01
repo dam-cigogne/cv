@@ -23,8 +23,9 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.8.4';
+const APP_VERSION = '1.9.0';
 const CHANGELOG = [
+  { v: '1.9.0', d: '02/11/2026', l: ['Nouveau : aide IA facultative (Réglages > IA), désactivée par défaut', 'IA : écrire ou améliorer le profil, réécrire les puces d’une expérience', 'IA : lettre de motivation et préparation d’entretien depuis une annonce (onglet Offre)'] },
   { v: '1.8.4', d: '02/11/2026', l: ['Réglages > Métiers : aide automatique pour créer un métier (mots-clés et domaine suggérés d’après le nom, ton CV ou une annonce collée)'] },
   { v: '1.8.3', d: '02/11/2026', l: ['Guide : nouvelle rubrique « Onglet Offre » avec le fonctionnement détaillé (calcul des pourcentages, analyse d’annonce, version adaptée, suivi)', 'Onglet Offre : bouton « Comment ça marche ? » en haut'] },
   { v: '1.8.2', d: '01/11/2026', l: ['Agenda : bouton « Copier le code » pour envoyer les rendez-vous directement dans l’appli AgenDam (sans passer par le navigateur)', 'Rendez-vous envoyés plus complets : statut, lien de l’offre, entreprise, notes'] },
@@ -439,6 +440,39 @@ function render() {
   }
   wrapVt();
 }
+/* ============ aide IA (facultative) ============ */
+const AI = () => S.set.ai || (S.set.ai = { on: false, url: '', token: '' });
+const aiOn = () => !!(AI().on && AI().url);
+function cvPlain(cv) {
+  const d = cv.data, L = [];
+  const id = d.identity; if (id.titre) L.push('Titre : ' + id.titre);
+  if (d.resume) L.push('Profil : ' + d.resume);
+  act(d.experiences).forEach(e => L.push(`Expérience : ${e.poste || ''} – ${e.entreprise || ''} (${[e.debut, e.actuel ? 'aujourd’hui' : e.fin].filter(Boolean).join(' → ')})\n${e.desc || ''}`));
+  act(d.formations).forEach(f => L.push(`Formation : ${f.diplome || ''} – ${f.ecole || ''}`));
+  const c = act(d.competences).map(x => x.nom).filter(Boolean); if (c.length) L.push('Compétences : ' + c.join(', '));
+  const l = act(d.langues).map(x => x.nom).filter(Boolean); if (l.length) L.push('Langues : ' + l.join(', '));
+  return L.join('\n').slice(0, 5500);
+}
+async function aiCall(task, input) {
+  const c = AI();
+  if (!aiOn()) { toast('Active l’IA dans Réglages > IA'); return null; }
+  if (ui.aiBusy) return null;
+  ui.aiBusy = true; toast('IA en cours… (quelques secondes)');
+  try {
+    const r = await fetch(c.url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-token': c.token || '' }, body: JSON.stringify({ task, input }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.text) { toast(j.error || 'L’IA ne répond pas (code ' + r.status + ')'); return null; }
+    return j;
+  } catch (e) { toast('Connexion impossible : vérifie l’adresse du relais'); return null; }
+  finally { ui.aiBusy = false; }
+}
+function aiSheet(title, text, apply) {
+  ui.aiRes = { apply };
+  openSheet(`<div class="sh"><h2>${esc(title)}</h2><button class="ib" data-act="closesheet">✕</button></div>
+   <div class="small muted">Relis et corrige avant d’utiliser : l’IA peut se tromper et ne connaît que ton CV.</div>
+   <textarea id="aiTxt" rows="12">${esc(text)}</textarea>
+   <div class="row2">${apply ? `<button class="btn" data-act="aiuse" style="flex:1">Utiliser ce texte</button>` : ''}<button class="btn ghost" data-act="aicopy" style="flex:1">Copier</button></div>`);
+}
 function toast(m) {
   let t = $('#toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
   t.textContent = m; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 2600);
@@ -497,7 +531,7 @@ function edInfos(cv) {
    <div class="grid2">${fld(cv, 'LinkedIn', 'data.identity.linkedin', 'linkedin.com/in/…')}${fld(cv, 'Site / portfolio', 'data.identity.site', 'https://…')}</div>
    ${fld(cv, 'Âge / naissance (facultatif)', 'data.identity.naissance', '')}</div>
    <div class="card"><h2>Profil</h2><div class="small muted">2–3 lignes : qui tu es, ce que tu apportes, ce que tu cherches.</div>
-   <label class="f"><textarea data-p="data.resume" rows="5">${esc(cv.data.resume)}</textarea></label></div>`;
+   <label class="f"><textarea data-p="data.resume" rows="5">${esc(cv.data.resume)}</textarea></label>${aiOn() ? '<button class="btn sm ghost" data-act="aiprofil">✨ Écrire ou améliorer avec l’IA</button>' : ''}</div>`;
 }
 function itemTools(l, it, idx, len) {
   return `<div class="tools"><label class="swrow" style="gap:8px"><span class="small">Inclure dans ce CV</span><span class="sw"><input type="checkbox" data-l="${l}" data-i="${it.id}" data-k="on" data-r="1" ${it.on !== false ? 'checked' : ''}><i></i></span></label>
@@ -515,7 +549,7 @@ function edParcours(cv) {
    <div class="body">${li('experiences', e, 'poste', 'Poste', 'Ex. Responsable d’équipe')}${li('experiences', e, 'entreprise', 'Entreprise', '')}${li('experiences', e, 'lieu', 'Lieu', '')}
    <div class="grid2">${li('experiences', e, 'debut', 'Début', 'MM/AAAA')}${e.actuel ? '<div></div>' : li('experiences', e, 'fin', 'Fin', 'MM/AAAA')}</div>
    <label class="swrow"><span>Poste actuel</span><span class="sw"><input type="checkbox" data-l="experiences" data-i="${e.id}" data-k="actuel" data-r="1" ${e.actuel ? 'checked' : ''}><i></i></span></label>
-   <label class="f">Missions et résultats (une puce par ligne, commence par « - »)<textarea rows="6" data-l="experiences" data-i="${e.id}" data-k="desc">${esc(e.desc)}</textarea></label>
+   <label class="f">Missions et résultats (une puce par ligne, commence par « - »)<textarea rows="6" data-l="experiences" data-i="${e.id}" data-k="desc">${esc(e.desc)}</textarea></label>${aiOn() ? `<button class="btn sm ghost" data-act="aipuces" data-i="${e.id}">✨ Améliorer les puces avec l’IA</button>` : ''}
    ${itemTools('experiences', e, n, L.length)}</div></details>`).join('')}
   <button class="btn" data-act="add" data-l="experiences">+ Ajouter une expérience</button>`;
 }
@@ -602,6 +636,7 @@ function tabOffre() {
    <div><b class="small">Déjà présents</b><div class="kw" style="margin-top:6px">${res.ok.length ? res.ok.map(w => `<span class="chip ok">${esc(w)}</span>`).join('') : '<span class="muted small">Aucun</span>'}</div></div>
    <div><b class="small">Absents de ton CV</b> <span class="small muted">· touche un mot pour l’ajouter aux compétences</span><div class="kw" style="margin-top:6px">${res.miss.length ? res.miss.map(w => `<span class="chip warn" data-act="addkw" data-w="${esc(w)}">+ ${esc(w)}</span>`).join('') : '<span class="muted small">Rien d’important ne manque.</span>'}</div></div>
    <div class="small muted">N’ajoute un mot que si tu maîtrises vraiment le sujet.</div></div>
+  ${aiOn() ? `<div class="card"><h2>Aide IA</h2><div class="small muted">Utilise le CV « ${esc((S.cvs.find(c => c.id === o.cvId) || {}).name || '')} » et l’annonce collée.</div><div class="row2"><button class="btn ghost" data-act="ailettre" style="flex:1">✨ Lettre de motivation</button><button class="btn ghost" data-act="aientretien" style="flex:1">✨ Préparer l’entretien</button></div></div>` : ''}
   <div class="card"><h2>Créer une version adaptée</h2><div class="small muted">Copie ton CV et remonte en premier ce qui répond à l’annonce.</div>
    <label class="swrow"><span>Masquer les compétences sans rapport</span><span class="sw"><input type="checkbox" data-u="offre.mask" ${o.mask ? 'checked' : ''}><i></i></span></label>
    <label class="swrow"><span>Mettre le poste visé en titre</span><span class="sw"><input type="checkbox" data-u="offre.settitle" ${o.settitle ? 'checked' : ''}><i></i></span></label>
@@ -674,13 +709,20 @@ function tabRegl() {
   if (t === 'data') { const kb = Math.round(JSON.stringify(S).length / 1024); body = `<div class="card"><h2>Mode démo</h2><div class="small muted">Charge un faux CV, de vraies annonces et un suivi complet pour tout essayer. Tes données sont mises de côté et reviennent quand tu quittes la démo.</div>${S.demo ? '<button class="btn" data-act="demoquit">Quitter la démo</button>' : '<button class="btn ghost" data-act="demo">Lancer la démo</button>'}</div><div class="card"><h2>Sauvegarde</h2><div class="small muted">Tout est stocké sur cet appareil (${kb} Ko). Exporte régulièrement un fichier pour ne rien perdre ou pour passer d’un téléphone à l’autre.</div>
    <button class="btn" data-act="expjson">Exporter mes données</button><button class="btn ghost" data-act="impjson">Importer un fichier</button></div>
    <div class="card"><h2>Zone dangereuse</h2><button class="btn danger" data-act="resetall">Tout effacer</button></div>`; }
+  if (t === 'ia') { const c = AI(); if (ui.aiu == null) { ui.aiu = c.url || ''; ui.ait = c.token || ''; } body = `<div class="card"><h2>Aide IA (facultative)</h2>
+    <div class="small muted">L’IA réécrit tes puces, ton profil, écrit une lettre de motivation et prépare l’entretien. Elle passe par un petit relais que tu héberges toi-même (Cloudflare).</div>
+    <div class="updst">🔒 Quand tu utilises un bouton IA, le texte concerné (CV, annonce) est envoyé à ton relais puis au modèle d’IA. Sans l’IA activée, rien ne quitte ton appareil.</div>
+    <button class="btn sm ${c.on ? '' : 'ghost'}" data-act="aitoggle">${c.on ? '☑ IA activée' : '☐ IA désactivée : touche pour activer'}</button>
+    <label class="f">Adresse du relais<input data-u="aiu" value="${esc(ui.aiu)}" placeholder="https://cv-ia.ton-compte.workers.dev" autocapitalize="off" autocorrect="off"></label>
+    <label class="f">Mot de passe du relais<input data-u="ait" type="password" value="${esc(ui.ait)}" autocapitalize="off" autocorrect="off"></label>
+    <div class="row2"><button class="btn" data-act="aisave" style="flex:1">Enregistrer</button><button class="btn ghost" data-act="aitest" style="flex:1">Tester</button></div></div>`; }
   if (t === 'about') body = `<div class="card"><h2>CV en poche</h2><div class="small">Gratuit, sans publicité, sans compte, hors connexion. Tes CV ne quittent jamais ton appareil : la lecture des PDF se fait sur ton téléphone.</div>
    <div class="small muted">Import PDF : la lecture est automatique mais pas parfaite, vérifie toujours le résultat. Les PDF scannés (images) ne sont pas lisibles.</div>
    <div class="small muted">Astuce : pour enregistrer en PDF, ouvre l’aperçu puis « Imprimer / PDF » et choisis « Enregistrer au format PDF ». Sur iPhone, ouvre l’appli dans Safari si l’impression ne s’ouvre pas.</div></div>`;
   if (t === 'maj') { const u = ui.upd || {}; const stat = u.st === 'ok' ? `<div class="updst ok">✅ Application à jour · version ${APP_VERSION}<small>Vérifié à ${u.t}</small></div>` : u.st === 'new' ? `<div class="updst nw">⬆ Mise à jour disponible · version ${u.v}<small>Tu as la version ${APP_VERSION}</small><button class="btn sm" data-act="applyupd">Mettre à jour maintenant</button></div>` : u.st === 'err' ? `<div class="updst er">Vérification impossible (hors connexion ?)<small>Version installée : ${APP_VERSION}</small></div>` : `<div class="updst">Vérification…</div>`; body = `<div class="card"><h2>Version ${APP_VERSION}</h2>${stat}<div class="small muted">Dernière mise à jour : ${CHANGELOG[0].d}</div><button class="btn" data-act="checkupd">Vérifier les mises à jour</button></div>
    ${CHANGELOG.map(c => `<div class="card tip"><h3>Version ${c.v} <span class="chip">${c.d}</span></h3><ul>${c.l.map(x => `<li>${x}</li>`).join('')}</ul></div>`).join('')}`; }
   return `<div class="wrap"><div class="top"><span class="app">Réglages</span><span class="chip">v${APP_VERSION}</span></div>
-  <div class="scrollx vt">${[['app', 'Apparence'], ['cv', 'Modèles'], ['met', 'Métiers'], ['data', 'Données'], ['maj', 'Mises à jour'], ['about', 'À propos']].map(([k, l]) => `<button class="${t === k ? 'on' : ''}" data-act="stab" data-v="${k}">${l}</button>`).join('')}</div>${body}</div>`;
+  <div class="scrollx vt">${[['app', 'Apparence'], ['cv', 'Modèles'], ['met', 'Métiers'], ['data', 'Données'], ['ia', 'IA'], ['maj', 'Mises à jour'], ['about', 'À propos']].map(([k, l]) => `<button class="${t === k ? 'on' : ''}" data-act="stab" data-v="${k}">${l}</button>`).join('')}</div>${body}</div>`;
 }
 
 /* ============ aperçu / impression ============ */
@@ -1286,6 +1328,15 @@ const ACT = {
   clreset: () => { S.checks = {}; save(); render(); },
   stab: v => { ui.stab = v; render(); },
   demo: () => demoOn(),
+  aitoggle: () => { AI().on = !AI().on; save(); render(); },
+  aisave: () => { const c = AI(); c.url = (ui.aiu || '').trim().replace(/\/+$/, ''); c.token = (ui.ait || '').trim(); save(); toast('Réglages IA enregistrés'); render(); },
+  aitest: async () => { const c = AI(); c.url = (ui.aiu || '').trim().replace(/\/+$/, ''); c.token = (ui.ait || '').trim(); const on = c.on; c.on = true; const r = await aiCall('ping', {}); c.on = on; if (r) { toast('Connexion OK (' + (r.provider === 'claude' ? 'Claude' : 'Workers AI') + ')'); save(); } },
+  aiprofil: async () => { const cv = curCV(); if (!cv) return; const r = await aiCall('profil', { titre: cv.data.identity.titre, resume: cv.data.resume, cv: cvPlain(cv) }); if (r) aiSheet('Profil proposé', r.text, t => { cv.data.resume = t; touch(cv); closeSheet(); render(); toast('Profil remplacé'); }); },
+  aipuces: async (v, el) => { const cv = curCV(), e = cv && cv.data.experiences.find(x => x.id === el.dataset.i); if (!e) return; if (!(e.desc || '').trim()) { toast('Écris d’abord quelques missions, même brutes'); return; } const r = await aiCall('puces', { poste: e.poste, entreprise: e.entreprise, text: e.desc }); if (r) aiSheet('Puces proposées', r.text, t => { e.desc = t; touch(cv); closeSheet(); render(); toast('Missions remplacées'); }); },
+  ailettre: async () => { const o = ui.offre, cv = S.cvs.find(c => c.id === o.cvId); if (!cv || !o.text.trim()) { toast('Colle d’abord l’annonce'); return; } const r = await aiCall('lettre', { poste: o.poste, entreprise: o.entreprise, annonce: o.text, cv: cvPlain(cv) }); if (r) aiSheet('Lettre de motivation', r.text, null); },
+  aientretien: async () => { const o = ui.offre, cv = S.cvs.find(c => c.id === o.cvId); if (!cv || !o.text.trim()) { toast('Colle d’abord l’annonce'); return; } const r = await aiCall('entretien', { poste: o.poste, entreprise: o.entreprise, annonce: o.text, cv: cvPlain(cv) }); if (r) aiSheet('Préparer l’entretien', r.text, null); },
+  aiuse: () => { const t = ($('#aiTxt') || {}).value || ''; if (ui.aiRes && ui.aiRes.apply && t.trim()) ui.aiRes.apply(t.trim()); },
+  aicopy: () => { const t = ($('#aiTxt') || {}).value || ''; navigator.clipboard?.writeText(t).then(() => toast('Texte copié'), () => toast('Copie impossible : sélectionne le texte')); },
   offhelp: () => { ui.tab = 'guide'; ui.gcat = 'offre'; render(); scrollTo(0, 0); },
   gomet: () => { ui.tab = 'regl'; ui.stab = 'met'; render(); scrollTo(0, 0); },
   mjmore: () => { ui.mjAll = !ui.mjAll; render(); },
