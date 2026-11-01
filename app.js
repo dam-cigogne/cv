@@ -23,8 +23,10 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.6.0';
+const APP_VERSION = '1.8.0';
 const CHANGELOG = [
+  { v: '1.8.0', d: '01/11/2026', l: ['Offre : « Métiers qui te correspondent » — une centaine de métiers classés selon ton CV (aéronautique très détaillé), avec les mots-clés qui collent et ceux à acquérir, et un bouton pour créer un CV adapté', 'Réglages > Métiers : choisis un ou plusieurs domaines, masque des métiers, ajoute les tiens', 'iPad : les onglets ne cachent plus le CV (colonne dédiée à droite) et la barre du milieu se glisse de gauche à droite pour régler la taille', 'Onglets verticaux compatibles avec les anciens iPad et iPhone', 'Suivi : date, heure, durée et lieu des entretiens', 'Suivi > 📅 Agenda : envoi des entretiens et relances vers AgenDam par un lien, ou en fichier .ics pour Apple, Outlook, Google'] },
+  { v: '1.7.0', d: '01/11/2026', l: ['Offre : tu choisis les sites d’emploi — masquer, supprimer, ajouter les tiens (colle l’adresse d’une recherche, l’appli la transforme), réinitialiser'] },
   { v: '1.6.0', d: '01/11/2026', l: ['Sauvegarde : l’export ouvre maintenant la feuille de partage sur iPhone et iPad (Enregistrer dans Fichiers, AirDrop, Mail…)', 'Offre : « Trouver des offres » ouvre les grands sites d’emploi avec ta recherche déjà remplie', 'Offre : bouton « Coller l’annonce » depuis le presse-papiers'] },
   { v: '1.5.1', d: '01/11/2026', l: ['Recadrage photo : le cadre ne s’écrase plus sur iPhone et iPad', 'Champs texte qui s’agrandissent tout seuls : les longs intitulés restent lisibles en entier'] },
   { v: '1.5.0', d: '01/11/2026', l: ['Photo : le recadrage marche maintenant sur iPhone et iPad (glisser, appui long, pincer pour zoomer)', 'Glisser-déposer des rubriques réparé sur iPhone et iPad', 'Mode démo : faux CV, vraies annonces, suivi complet — on le quitte d’un bouton et tes données reviennent', 'Guide du CV complété : mise en page, langues et loisirs, situations (reconversion, débutant, militaire, senior, anglais), lettre de motivation, entretien, LinkedIn', 'Suivi : bouton pour relire et analyser l’annonce d’une candidature', 'Réglages > Mises à jour : message « Application à jour · version X » (ou « Mise à jour disponible »), vérifié à chaque ouverture', 'Onglets du côté : un onglet par carte, comme Comptes en ligne'] },
@@ -68,7 +70,7 @@ addEventListener('pagehide', saveNow);
 document.addEventListener('visibilitychange', () => { if (document.hidden) saveNow(); });
 
 const ui = { tab: 'cv', ed: null, edTab: 'infos', open: {}, jobFilter: 'all', gcat: 'essentiel', stab: 'app', offre: { text: '', cvId: '', entreprise: '', poste: '', res: null, mask: true, settitle: false }, prevZoom: 1, jd: null, imp: null, sheet: null };
-ui.lh = 42; ui.lz = 1; ui.so = { q: '', l: '' };
+ui.lh = 42; ui.lz = 1; ui.lw = 46; document.documentElement.style.setProperty('--lw', '46%'); ui.so = { q: '', l: '' };
 const curCV = () => S.cvs.find(c => c.id === ui.ed);
 const touch = cv => { cv.updated = Date.now(); save(); };
 
@@ -410,6 +412,9 @@ function renderNav() {
   nav.hidden = !!ui.ed;
   nav.innerHTML = `<div class="in">${TABS.map(([k, l]) => `<button class="${ui.tab === k ? 'on' : ''}" data-act="nav" data-v="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]}</svg>${l}</button>`).join('')}</div>`;
 }
+function wrapVt() {
+  document.querySelectorAll('.vt button').forEach(b => { if (!(b.firstElementChild && b.firstElementChild.classList.contains('vl'))) { const sp = document.createElement('span'); sp.className = 'vl'; while (b.firstChild) sp.appendChild(b.firstChild); b.appendChild(sp); } });
+}
 function render() {
   const y = window.scrollY, fs = $('.edform')?.scrollTop || 0, ls = $('#lps')?.scrollTop || 0;
   renderNav(); document.body.classList.toggle('demo', !!S.demo);
@@ -420,6 +425,7 @@ function render() {
     const f = $('.edform'); if (f && !ui.resetForm) f.scrollTop = fs; ui.resetForm = 0;
     updLive(); const l = $('#lps'); if (l) l.scrollTop = ls; growAll();
   }
+  wrapVt();
 }
 function toast(m) {
   let t = $('#toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
@@ -456,13 +462,14 @@ function cvCard(cv) {
 const ET = [['infos', 'Infos'], ['parcours', 'Parcours'], ['formation', 'Formation'], ['comp', 'Compétences'], ['plus', 'Plus'], ['style', 'Style'], ['controle', 'Contrôle']];
 function viewEditor(cv) {
   const body = { infos: edInfos, parcours: edParcours, formation: edFormation, comp: edComp, plus: edPlus, style: edStyle, controle: edControle }[ui.edTab](cv);
-  const undo = ui.undo && ui.undo.id === cv.id;
+  const undo = ui.undo && ui.undo.id === cv.id, side = S.set.filt === 'side';
+  const tabsHtml = `<div class="scrollx vt${side ? ' edrail' : ''}">${ET.map(([k, l]) => `<button class="${ui.edTab === k ? 'on' : ''}" data-act="edtab" data-v="${k}">${l}</button>`).join('')}</div>`;
   return `<div class="edsplit" style="--lh:${ui.lh}vh">
    <div class="edhead"><div class="edtitle"><button class="ib" data-act="back" aria-label="Retour">←</button><input data-p="name" value="${esc(cv.name)}" aria-label="Nom du CV"><button class="ib" data-act="cvmenu" data-id="${cv.id}" aria-label="Plus">⋯</button></div>
-   <div class="scrollx vt">${ET.map(([k, l]) => `<button class="${ui.edTab === k ? 'on' : ''}" data-act="edtab" data-v="${k}">${l}</button>`).join('')}</div></div>
+   ${side ? '' : tabsHtml}</div>
    <div class="livepane"><div class="lp-bar"><span id="lpinfo"></span><span class="lpb"><button class="btn sm" data-act="auto">✨ Auto</button>${undo ? '<button class="btn sm ghost" data-act="undoauto">↶ Annuler</button>' : ''}<button class="ib sm" data-act="lzoom" data-d="-1" aria-label="Réduire">−</button><button class="ib sm" data-act="lzoom" data-d="1" aria-label="Agrandir">+</button><button class="ib sm" data-act="prev" data-id="${cv.id}" aria-label="Plein écran">⤢</button></span></div><div class="lp-s" id="lps"></div></div>
    <div class="handle" aria-label="Redimensionner"><i></i></div>
-   <div class="edform">${cv.review ? `<div class="banner"><span>CV importé : vérifie chaque rubrique, la lecture automatique peut se tromper. Le texte non classé est dans « Plus ».</span><button class="btn sm ghost" data-act="dismiss">OK</button></div>` : ''}${body}</div></div>
+   <div class="edform">${cv.review ? `<div class="banner"><span>CV importé : vérifie chaque rubrique, la lecture automatique peut se tromper. Le texte non classé est dans « Plus ».</span><button class="btn sm ghost" data-act="dismiss">OK</button></div>` : ''}${body}</div><div class="vhandle" aria-label="Régler la largeur"><i></i></div>${side ? tabsHtml : ''}</div>
    <div class="edbar"><div class="in"><button class="btn" data-act="prev" data-id="${cv.id}">Plein écran et PDF</button></div></div>`;
 }
 const fld = (cv, label, path, ph = '', type = 'text') => { const v = path.split('.').reduce((o, k) => o?.[k], cv); return type === 'text' ? `<label class="f">${label}<textarea class="ag" rows="1" data-p="${path}" placeholder="${esc(ph)}" autocomplete="off">${esc(v)}</textarea></label>` : `<label class="f">${label}<input type="${type}" data-p="${path}" value="${esc(v)}" placeholder="${esc(ph)}" autocomplete="off"></label>`; };
@@ -564,10 +571,16 @@ function tabOffre() {
   if (!S.cvs.length) return `<div class="wrap"><div class="top"><span class="app">Offre</span></div><div class="card empty"><b>Crée d’abord un CV</b><div class="small">L’analyse compare une annonce avec ton CV.</div><button class="btn" data-act="nav" data-v="cv" style="margin-top:8px">Aller aux CV</button></div></div>`;
   const cv0 = S.cvs.find(c => c.id === o.cvId) || S.cvs[0], so = ui.so;
   if (!so.q && !so.init) { so.init = 1; so.q = cv0?.data.identity.titre || ''; so.l = cv0?.data.identity.ville || ''; }
+  const mj = matchJobs(cv0), nShow = ui.mjAll ? 20 : 8, dn = (S.set.doms || []).map(k => (DOMS.find(x => x[0] === k) || [, ''])[1]).filter(Boolean);
   return `<div class="wrap"><div class="top"><span class="app">Offre</span></div>
-  <div class="card"><h2>Trouver des offres</h2><div class="small muted">Choisis un métier et une ville : un site s’ouvre avec ta recherche déjà faite. Ouvre l’annonce, copie son texte, puis reviens ici et touche « Coller l’annonce ».</div>
+  <div class="card"><h2>Métiers qui te correspondent</h2><div class="small muted">Classés d’après le CV « ${esc(cv0?.name || '')} ». ${dn.length ? 'Domaines choisis : ' + esc(dn.join(', ')) + '.' : 'Aucun domaine choisi : tous les métiers sont classés.'} <button class="btn sm ghost" data-act="gomet" style="margin-top:6px">Choisir les domaines</button></div>
+   ${mj.length ? mj.slice(0, nShow).map(m => `<div class="mj"><div class="l1"><b>${esc(m.n)}</b><span class="chip ${m.pct >= 70 ? 'ok' : ''}">${m.pct} %</span></div>
+    <div class="bar"><i style="width:${m.pct}%"></i></div>
+    <div class="small"><span class="muted">Dans ton CV :</span> ${m.ok.slice(0, 6).map(esc).join(', ')}</div>${m.ko.length ? `<div class="small muted">À mettre en avant ou acquérir : ${m.ko.slice(0, 4).map(esc).join(', ')}</div>` : ''}
+    <div class="row2"><button class="btn sm ghost" data-act="mjsearch" data-v="${esc(m.n)}">Chercher des offres</button><button class="btn sm ghost" data-act="mjcv" data-v="${esc(m.n)}">CV pour ce métier</button><button class="ib sm" data-act="mjhide" data-v="${esc(m.n)}" aria-label="Masquer">✕</button></div></div>`).join('') + (mj.length > 8 ? `<button class="btn ghost sm" data-act="mjmore">${ui.mjAll ? 'Voir moins' : 'Voir plus de métiers'}</button>` : '') : '<div class="empty small">Complète ton CV (compétences, expériences) pour obtenir des pistes.</div>'}</div>
+  <div class="card" id="sojobs"><h2>Trouver des offres</h2><div class="small muted">Choisis un métier et une ville : un site s’ouvre avec ta recherche déjà faite. Ouvre l’annonce, copie son texte, puis reviens ici et touche « Coller l’annonce ».</div>
    <div class="grid2"><label class="f">Métier<input data-u="so.q" value="${esc(so.q)}" placeholder="Ex. chargé de communication"></label><label class="f">Ville<input data-u="so.l" value="${esc(so.l)}" placeholder="Ex. Lyon"></label></div>
-   <div class="chips">${JOBSITES.map(([k, n]) => `<button class="btn sm ghost" data-act="jobsite" data-v="${k}">${n}</button>`).join('')}</div></div>
+   <div class="chips">${getSites().filter(x => !x.off).map(x => `<button class="btn sm ghost" data-act="jobsite" data-v="${x.id}">${esc(x.n)}</button>`).join('')}<button class="btn sm ghost" data-act="sites">⚙ Gérer les sites</button></div></div>
   <div class="card"><h2>Adapter son CV à une annonce</h2><div class="small muted">Colle l’annonce : l’appli repère les mots-clés et ce qui manque à ton CV.</div>
    <label class="f">CV à comparer<select data-u="offre.cvId">${S.cvs.map(c => `<option value="${c.id}" ${c.id === o.cvId ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>
    <div class="grid2"><label class="f">Poste<input data-u="offre.poste" value="${esc(o.poste)}" placeholder="Ex. Chef de projet"></label><label class="f">Entreprise<input data-u="offre.entreprise" value="${esc(o.entreprise)}"></label></div>
@@ -589,14 +602,14 @@ function tabSuivi() {
   const cnt = k => S.jobs.filter(j => j.statut === k).length;
   const list = S.jobs.filter(j => f === 'all' || j.statut === f).sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.created - a.created);
   const due = S.jobs.filter(j => j.statut === 'envoyee' && j.relance && j.relance <= today).length;
-  return `<div class="wrap"><div class="top"><span class="app">Suivi</span><button class="btn sm" data-act="newjob">+ Candidature</button></div>
+  return `<div class="wrap"><div class="top"><span class="app">Suivi</span><span class="row2"><button class="btn sm ghost" data-act="agenda">📅 Agenda</button><button class="btn sm" data-act="newjob">+ Candidature</button></span></div>
   ${due ? `<div class="banner"><span>${due} relance${due > 1 ? 's' : ''} à faire.</span></div>` : ''}
   <div class="withfilt"><div class="catbar vt"><button class="${f === 'all' ? 'on' : ''}" data-act="jf" data-v="all">Toutes<span> ${S.jobs.length}</span></button>${STATUTS.map(([k, l]) => `<button class="${f === k ? 'on' : ''}" data-act="jf" data-v="${k}">${l}<span> ${cnt(k)}</span></button>`).join('')}</div>
   <div class="card">${list.length ? list.map(j => {
     const cv = S.cvs.find(c => c.id === j.cvId), st = (STATUTS.find(s => s[0] === j.statut) || [, ''])[1];
     const late = j.statut === 'envoyee' && j.relance && j.relance < today, tod = j.statut === 'envoyee' && j.relance === today;
     return `<button class="job" data-act="editjob" data-id="${j.id}"><div class="l1"><b>${esc(j.poste || 'Poste')}</b><span class="chip ${j.statut === 'refus' ? 'bad' : j.statut === 'offre' ? 'ok' : ''}">${st}</span></div>
-     <div class="small muted">${esc(j.entreprise || '—')}${j.date ? ' · envoyée le ' + fmtDate(j.date) : ''}${cv ? ' · ' + esc(cv.name) : ''}</div>${late ? '<span class="chip bad">Relance dépassée</span>' : tod ? '<span class="chip warn">Relance aujourd’hui</span>' : j.relance && j.statut === 'envoyee' ? `<span class="small muted">Relance le ${fmtDate(j.relance)}</span>` : ''}</button>`;
+     <div class="small muted">${esc(j.entreprise || '—')}${j.date ? ' · envoyée le ' + fmtDate(j.date) : ''}${cv ? ' · ' + esc(cv.name) : ''}</div>${late ? '<span class="chip bad">Relance dépassée</span>' : tod ? '<span class="chip warn">Relance aujourd’hui</span>' : j.relance && j.statut === 'envoyee' ? `<span class="small muted">Relance le ${fmtDate(j.relance)}</span>` : ''}${j.rdv ? `<div class="small"><b>📅 Entretien le ${fmtDate(j.rdv.slice(0, 10))} à ${esc(j.rdv.slice(11, 16).replace(':', ' h '))}</b>${j.rdvLieu ? ' · ' + esc(j.rdvLieu) : ''}</div>` : ''}</button>`;
   }).join('') : '<div class="empty small">Aucune candidature ici.</div>'}</div></div></div>`;
 }
 function jobSheet(j) {
@@ -607,11 +620,13 @@ function jobSheet(j) {
   <div class="grid2"><label class="f">Statut<select data-u="jd.statut">${STATUTS.map(([k, l]) => `<option value="${k}" ${j.statut === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
   <label class="f">CV envoyé<select data-u="jd.cvId"><option value="">—</option>${S.cvs.map(c => `<option value="${c.id}" ${j.cvId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label></div>
   <div class="grid2"><label class="f">Date d’envoi<input type="date" data-u="jd.date" value="${esc(j.date)}"></label><label class="f">Relance prévue<input type="date" data-u="jd.relance" value="${esc(j.relance)}"></label></div>
+  <div class="grid2"><label class="f">Entretien : date et heure<input type="datetime-local" data-u="jd.rdv" value="${esc(j.rdv || '')}"></label><label class="f">Durée (minutes)<input type="number" inputmode="numeric" min="15" step="15" data-u="jd.rdvDur" data-num="1" value="${j.rdvDur || 60}"></label></div>
+  <label class="f">Lieu ou lien visio de l’entretien<input data-u="jd.rdvLieu" value="${esc(j.rdvLieu || '')}" placeholder="Adresse, Teams, Zoom…"></label>
   <label class="f">Notes<textarea data-u="jd.notes" rows="3">${esc(j.notes)}</textarea></label>
   ${j.offre ? `<button class="btn ghost" data-act="jobanalyze" data-id="${j.id}">Relire et analyser l’annonce</button>` : ''}
   <div class="row2"><button class="btn" data-act="savejob" style="flex:1">Enregistrer</button>${j.created ? `<button class="btn danger" data-act="deljob" data-id="${j.id}">Supprimer</button>` : ''}${j.url ? `<a class="btn ghost" href="${esc(j.url)}" target="_blank" rel="noopener" style="text-decoration:none;text-align:center">Voir l’annonce</a>` : ''}</div>`);
 }
-const newJob = () => ({ id: uid(), poste: '', entreprise: '', url: '', statut: 'aenvoyer', cvId: S.cvs[0]?.id || '', date: '', relance: '', notes: '', offre: '', created: 0 });
+const newJob = () => ({ id: uid(), poste: '', entreprise: '', url: '', statut: 'aenvoyer', cvId: S.cvs[0]?.id || '', date: '', relance: '', notes: '', offre: '', created: 0, rdv: '', rdvDur: 60, rdvLieu: '' });
 
 /* ---- onglet Guide ---- */
 function tabGuide() {
@@ -630,6 +645,16 @@ function tabRegl() {
   if (t === 'app') body = `<div class="card"><h2>Thème</h2>${seg('theme', [['auto', 'Auto'], ['light', 'Clair'], ['dark', 'Sombre']])}<h2>Couleur de l’appli</h2><div class="pal">${ACCENTS.map(c => `<button class="${s.accent === c ? 'on' : ''}" style="background:${c}" data-act="set" data-k="accent" data-v="${c}"></button>`).join('')}</div>
    <h2>Taille du texte</h2>${seg('size', [['small', 'Petit'], ['normal', 'Normal'], ['big', 'Grand']])}
    <h2>Onglets de filtres</h2>${seg('filt', [['top', 'En haut'], ['side', 'Sur le côté']])}</div>`;
+  if (t === 'met') { const doms = S.set.doms || [], mj = ui.mj || (ui.mj = { n: '', k: '', d: '' }); body = `<div class="card"><h2>Mes domaines</h2><div class="small muted">Choisis un ou plusieurs domaines : les métiers de ces domaines passent devant dans l’onglet Offre.</div>
+    <div class="chips">${DOMS.map(([k, n]) => `<button class="${doms.includes(k) ? 'on' : ''}" data-act="domtoggle" data-v="${k}">${doms.includes(k) ? '✓ ' : ''}${esc(n)}</button>`).join('')}</div>
+    <button class="btn sm ${S.set.onlyDoms ? '' : 'ghost'}" data-act="onlydoms">${S.set.onlyDoms ? '☑' : '☐'} Montrer uniquement ces domaines</button></div>
+   <div class="card"><h2>Ajouter un métier</h2><div class="small muted">Donne un nom et des mots-clés (séparés par des virgules) : il sera classé comme les autres.</div>
+    <label class="f">Nom du métier<input data-u="mj.n" value="${esc(mj.n)}" placeholder="Ex. Responsable maintenance hélicoptères"></label>
+    <label class="f">Mots-clés<textarea data-u="mj.k" rows="2" placeholder="maintenance, helicoptere, hangar, encadrement…">${esc(mj.k)}</textarea></label>
+    <label class="f">Domaine<select data-u="mj.d"><option value="">—</option>${DOMS.map(([k, n]) => `<option value="${k}" ${mj.d === k ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+    <button class="btn" data-act="mjadd">Ajouter</button>
+    ${(S.set.myJobs || []).map(x => `<div class="skill"><span style="flex:1">${esc(x.n)}</span><button class="ib sm" data-act="mjdel" data-v="${esc(x.n)}" aria-label="Retirer">✕</button></div>`).join('')}</div>
+   ${(S.set.hideJobs || []).length ? `<div class="card"><h2>Métiers masqués</h2>${S.set.hideJobs.map(x => `<div class="skill"><span style="flex:1">${esc(x)}</span><button class="btn sm ghost" data-act="mjunhide" data-v="${esc(x)}">Réafficher</button></div>`).join('')}</div>` : ''}`; }
   if (t === 'cv') body = `<div class="card"><h2>Modèle par défaut</h2><div class="seg">${TPLS.map(([k, n]) => `<button class="${s.tpl === k ? 'on' : ''}" data-act="set" data-k="tpl" data-v="${k}">${n}</button>`).join('')}</div>
    <h2>Couleur par défaut</h2><div class="pal">${ACCENTS.map(c => `<button class="${s.cvAccent === c ? 'on' : ''}" style="background:${c}" data-act="set" data-k="cvAccent" data-v="${c}"></button>`).join('')}</div>
    <h2>Police par défaut</h2>${seg('font', [['sans', 'Sans empattement'], ['serif', 'Avec empattement']])}<div class="small muted">S’applique aux nouveaux CV.</div></div>`;
@@ -642,7 +667,7 @@ function tabRegl() {
   if (t === 'maj') { const u = ui.upd || {}; const stat = u.st === 'ok' ? `<div class="updst ok">✅ Application à jour · version ${APP_VERSION}<small>Vérifié à ${u.t}</small></div>` : u.st === 'new' ? `<div class="updst nw">⬆ Mise à jour disponible · version ${u.v}<small>Tu as la version ${APP_VERSION}</small><button class="btn sm" data-act="applyupd">Mettre à jour maintenant</button></div>` : u.st === 'err' ? `<div class="updst er">Vérification impossible (hors connexion ?)<small>Version installée : ${APP_VERSION}</small></div>` : `<div class="updst">Vérification…</div>`; body = `<div class="card"><h2>Version ${APP_VERSION}</h2>${stat}<div class="small muted">Dernière mise à jour : ${CHANGELOG[0].d}</div><button class="btn" data-act="checkupd">Vérifier les mises à jour</button></div>
    ${CHANGELOG.map(c => `<div class="card tip"><h3>Version ${c.v} <span class="chip">${c.d}</span></h3><ul>${c.l.map(x => `<li>${x}</li>`).join('')}</ul></div>`).join('')}`; }
   return `<div class="wrap"><div class="top"><span class="app">Réglages</span><span class="chip">v${APP_VERSION}</span></div>
-  <div class="scrollx vt">${[['app', 'Apparence'], ['cv', 'Modèles'], ['data', 'Données'], ['maj', 'Mises à jour'], ['about', 'À propos']].map(([k, l]) => `<button class="${t === k ? 'on' : ''}" data-act="stab" data-v="${k}">${l}</button>`).join('')}</div>${body}</div>`;
+  <div class="scrollx vt">${[['app', 'Apparence'], ['cv', 'Modèles'], ['met', 'Métiers'], ['data', 'Données'], ['maj', 'Mises à jour'], ['about', 'À propos']].map(([k, l]) => `<button class="${t === k ? 'on' : ''}" data-act="stab" data-v="${k}">${l}</button>`).join('')}</div>${body}</div>`;
 }
 
 /* ============ aperçu / impression ============ */
@@ -787,7 +812,7 @@ function cropSave() {
 let liveT;
 function updLive() {
   const cv = ui.ed && curCV(), box = $('#lps'); if (!cv || !box) return;
-  const r = renderPages(cv), side = document.body.classList.contains('filt-side');
+  const r = renderPages(cv), side = document.body.classList.contains('filt-side') && !matchMedia('(min-width:900px)').matches;
   const w = Math.max(150, box.clientWidth - 24 - (side ? 30 : 0)) * (ui.lz || 1), k = w / PAGE_W, h = w * 297 / 210, st = box.scrollTop;
   box.innerHTML = `<div class="lpin" style="width:${w + 24}px">${r.pages.map(p => `<div class="pgbox" style="width:${w}px;height:${h}px"><div style="transform:scale(${k});transform-origin:0 0;width:${PAGE_W}px">${p}</div></div>`).join('')}</div>`;
   box.scrollTop = st;
@@ -798,12 +823,23 @@ function updLive() {
 }
 const liveSoon = () => { clearTimeout(liveT); liveT = setTimeout(updLive, 130); };
 document.addEventListener('pointerdown', e => {
-  const h = e.target.closest('.handle'); if (!h) return;
+  const h = e.target.closest('.handle'); if (!h || e.pointerType !== 'mouse') return;
   const y0 = e.clientY, v0 = ui.lh; h.setPointerCapture(e.pointerId);
   const mv = ev => { ui.lh = Math.round(Math.max(14, Math.min(78, v0 + (ev.clientY - y0) / innerHeight * 100))); $('.edsplit')?.style.setProperty('--lh', ui.lh + 'vh'); };
   const up = () => { h.removeEventListener('pointermove', mv); h.removeEventListener('pointerup', up); h.removeEventListener('pointercancel', up); updLive(); };
   h.addEventListener('pointermove', mv); h.addEventListener('pointerup', up); h.addEventListener('pointercancel', up);
 });
+const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+let vh = null, hh = null;
+const vhSet = x => { ui.lw = Math.round(clampN(x / innerWidth * 100, 22, 75)); document.documentElement.style.setProperty('--lw', ui.lw + '%'); };
+const hhSet = y => { ui.lh = Math.round(clampN(hh.v0 + (y - hh.y0) / innerHeight * 100, 14, 78)); $('.edsplit')?.style.setProperty('--lh', ui.lh + 'vh'); };
+document.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse' && e.target.closest('.vhandle')) { vh = 1; e.preventDefault(); } });
+document.addEventListener('pointermove', e => { if (vh && e.pointerType === 'mouse') vhSet(e.clientX); });
+document.addEventListener('pointerup', e => { if (vh && e.pointerType === 'mouse') { vh = null; updLive(); } });
+document.addEventListener('touchstart', e => { const t = e.touches[0]; if (e.target.closest('.vhandle')) vh = 1; else if (e.target.closest('.handle')) hh = { y0: t.clientY, v0: ui.lh }; }, { passive: true });
+document.addEventListener('touchmove', e => { const t = e.touches[0]; if (vh) { e.preventDefault(); vhSet(t.clientX); } else if (hh) { e.preventDefault(); hhSet(t.clientY); } }, { passive: false });
+document.addEventListener('touchend', () => { if (vh || hh) { vh = hh = null; updLive(); } });
+document.addEventListener('touchcancel', () => { vh = hh = null; });
 let dd = null;
 function ddStart() {
   const r = dd.row.getBoundingClientRect(); dd.on = true; navigator.vibrate?.(15);
@@ -872,16 +908,122 @@ function autoLayout() {
 }
 
 
+
+/* ============ métiers qui te correspondent ============ */
+const DOMS = [['aero', 'Aéronautique et spatial'], ['indus', 'Industrie et maintenance'], ['log', 'Logistique et transport'], ['qse', 'Qualité, sécurité, environnement'], ['secu', 'Sûreté, défense, sécurité civile'], ['btp', 'BTP et énergie'], ['it', 'Informatique et numérique'], ['com', 'Communication et marketing'], ['gest', 'Gestion, administration, RH'], ['vente', 'Commerce et relation client'], ['form', 'Formation et enseignement'], ['sante', 'Santé et social'], ['hotel', 'Tourisme et restauration']];
+const METIERS = [
+  ['Responsable maintenance aéronautique', 'aero', 'maintenance,aeronef,aeronautique,avion,hangar,part 145,part 66,easa,navigabilite,planning,encadrement,equipe,budget,qualite,securite,gmao'],
+  ['Chef d’équipe maintenance aéronautique', 'aero', 'maintenance,aeronef,hangar,equipe,encadrement,planning,depannage,inspection,avion,helicoptere,securite,procedures,aeronautique'],
+  ['Technicien de maintenance aéronautique', 'aero', 'maintenance,aeronef,avion,helicoptere,depannage,inspection,mecanique,moteur,turbine,avionique,documentation technique,procedures,part 66,aeronautique'],
+  ['Technicien avionique', 'aero', 'avionique,electronique,electrique,cablage,essais,diagnostic,aeronef,systemes,maintenance,tests,aeronautique'],
+  ['Mécanicien moteur et turbine', 'aero', 'moteur,turbine,mecanique,demontage,remontage,inspection,aeronautique,outillage,depannage,couple,reacteur'],
+  ['Technicien structure et composites', 'aero', 'structure,composites,reparation,tole,rivetage,aeronautique,collage,inspection,controle,soudure'],
+  ['Gestionnaire de maintenance (CAMO)', 'aero', 'camo,navigabilite,planification,maintenance,gmao,aeronef,documentation,suivi,potentiels,easa,reglementation,aeronautique'],
+  ['Planificateur maintenance aéronautique', 'aero', 'planification,planning,maintenance,gmao,ordonnancement,aeronef,charge,delais,coordination,hangar,aeronautique'],
+  ['Responsable qualité aéronautique', 'aero', 'qualite,audit,easa,part 145,certification,tracabilite,non conformite,procedures,amelioration continue,aeronautique,iso 9001,en 9100'],
+  ['Inspecteur contrôleur qualité aéronautique', 'aero', 'controle,inspection,qualite,tracabilite,non conformite,aeronautique,mesure,conformite,documentation,certification,navigabilite'],
+  ['Ingénieur ou technicien méthodes maintenance', 'aero', 'methodes,maintenance,optimisation,procedures,gmao,documentation technique,amelioration continue,aeronautique,planification,lean'],
+  ['Responsable atelier ou production aéronautique', 'aero', 'production,atelier,encadrement,planning,delais,qualite,securite,aeronautique,lean,equipe,hangar'],
+  ['Responsable logistique pièces aéronautiques', 'aero', 'logistique,approvisionnement,stock,pieces,aeronautique,supply chain,gestion de stock,fournisseurs,tracabilite,achats,rechange'],
+  ['Formateur technique aéronautique', 'aero', 'formation,formateur,pedagogie,maintenance,aeronautique,transmission,tutorat,procedures,securite,evaluation,aeronef'],
+  ['Responsable sécurité des vols (Safety manager)', 'aero', 'securite,sgs,safety,risques,audit,aeronautique,reglementation,prevention,analyse,incident,vol'],
+  ['Responsable documentation technique', 'aero', 'documentation,technique,redaction,procedures,manuel,amm,ata,revision,tracabilite,aeronautique,maintenance'],
+  ['Chargé d’affaires MRO', 'aero', 'mro,devis,client,maintenance,planning,budget,aeronautique,negociation,suivi,contrat,aeronef'],
+  ['Technicien d’essais', 'aero', 'essais,tests,mesure,banc,instrumentation,rapport,aeronautique,diagnostic,protocole,analyse'],
+  ['Chef d’escale ou responsable opérations aéroportuaires', 'aero', 'aeroport,escale,operations,piste,securite,coordination,encadrement,passagers,planning,avion'],
+  ['Responsable maintenance industrielle', 'indus', 'maintenance,gmao,preventif,curatif,equipe,budget,arret,securite,electromecanique,planning,encadrement'],
+  ['Technicien de maintenance industrielle', 'indus', 'maintenance,depannage,electromecanique,automatisme,hydraulique,pneumatique,preventif,diagnostic,gmao,mecanique'],
+  ['Responsable de production', 'indus', 'production,encadrement,equipe,planning,delais,qualite,securite,lean,indicateurs,budget,atelier'],
+  ['Chef d’atelier', 'indus', 'atelier,equipe,encadrement,planning,production,securite,qualite,maintenance,organisation,outillage'],
+  ['Responsable amélioration continue (Lean)', 'indus', 'lean,kaizen,5s,amelioration continue,processus,performance,indicateurs,formation,optimisation,projet'],
+  ['Automaticien', 'indus', 'automate,plc,siemens,schneider,supervision,programmation,automatisme,electricite,maintenance,diagnostic'],
+  ['Ingénieur méthodes industrialisation', 'indus', 'methodes,industrialisation,gammes,temps,process,optimisation,production,documentation,lean,cao'],
+  ['Chef de projet industriel', 'indus', 'projet,planning,budget,industrie,coordination,cahier des charges,fournisseurs,qualite,delais,equipe'],
+  ['Responsable logistique', 'log', 'logistique,stock,approvisionnement,transport,entrepot,planning,fournisseurs,encadrement,supply chain,flux,budget'],
+  ['Responsable d’entrepôt', 'log', 'entrepot,stock,preparation de commandes,cariste,equipe,encadrement,securite,inventaire,flux,wms'],
+  ['Gestionnaire de stocks et approvisionneur', 'log', 'stock,approvisionnement,inventaire,commandes,fournisseurs,gestion de stock,erp,sap,pieces,tracabilite'],
+  ['Acheteur', 'log', 'achats,fournisseurs,negociation,appel d offres,cahier des charges,budget,contrats,consultation,cout'],
+  ['Responsable transport', 'log', 'transport,tournees,affretement,logistique,planning,chauffeurs,reglementation,couts,client,encadrement'],
+  ['Responsable QHSE', 'qse', 'qualite,securite,environnement,hse,audit,iso 9001,iso 14001,prevention,risques,reglementation,formation,document unique'],
+  ['Responsable qualité', 'qse', 'qualite,audit,iso 9001,non conformite,amelioration continue,procedures,tracabilite,indicateurs,reclamations,certification'],
+  ['Animateur sécurité et préventeur', 'qse', 'prevention,securite,risques,formation,document unique,accidents,audit,reglementation,sensibilisation,epi'],
+  ['Auditeur qualité', 'qse', 'audit,qualite,conformite,referentiel,iso,rapport,non conformite,certification,procedures,amelioration'],
+  ['Responsable environnement', 'qse', 'environnement,iso 14001,dechets,energie,reglementation,audit,rse,prevention,pollution'],
+  ['Responsable sûreté et sécurité', 'secu', 'surete,securite,protection,risques,gestion de crise,prevention,controle,surveillance,reglementation,encadrement'],
+  ['Responsable sécurité incendie (SSIAP)', 'secu', 'ssiap,incendie,securite,prevention,erp,evacuation,formation,controle,equipe'],
+  ['Agent de sûreté aéroportuaire', 'secu', 'surete,aeroport,controle,securite,inspection,filtrage,reglementation,vigilance,passagers'],
+  ['Chargé de mission sécurité civile et défense', 'secu', 'securite,defense,crise,planification,coordination,reglementation,exercices,risques,administration,partenaires'],
+  ['Conducteur de travaux', 'btp', 'travaux,chantier,planning,budget,sous traitants,securite,coordination,reception,encadrement,plans'],
+  ['Chef de chantier', 'btp', 'chantier,equipe,encadrement,securite,planning,travaux,lecture de plans,qualite,materiel'],
+  ['Responsable technique bâtiment', 'btp', 'batiment,maintenance,technique,securite,contrats,fournisseurs,travaux,reglementation,equipe,erp'],
+  ['Technicien de maintenance énergie (photovoltaïque, éolien)', 'btp', 'energie,photovoltaique,eolien,maintenance,electricite,habilitation,diagnostic,securite,depannage,onduleur'],
+  ['Chef de projet informatique', 'it', 'projet,informatique,planning,budget,cahier des charges,agile,scrum,equipe,recette,coordination'],
+  ['Technicien support informatique', 'it', 'support,assistance,helpdesk,windows,reseau,utilisateurs,incidents,maintenance,materiel,ticket'],
+  ['Administrateur systèmes et réseaux', 'it', 'systemes,reseau,serveurs,linux,windows,securite,virtualisation,sauvegarde,supervision,active directory'],
+  ['Développeur web', 'it', 'javascript,html,css,web,php,react,sql,developpement,api,git'],
+  ['Analyste de données', 'it', 'donnees,data,sql,excel,power bi,tableaux de bord,analyse,statistiques,python,reporting'],
+  ['Chef de projet digital', 'it', 'digital,projet,web,site,cahier des charges,agile,planning,client,budget,coordination'],
+  ['Chargé de communication', 'com', 'communication,redaction,reseaux sociaux,evenements,newsletter,plan de communication,presse,canva,contenus,editorial'],
+  ['Community manager', 'com', 'reseaux sociaux,community,instagram,linkedin,facebook,contenus,animation,editorial,audience,moderation'],
+  ['Responsable marketing digital', 'com', 'marketing,digital,seo,emailing,campagnes,google analytics,acquisition,budget,reseaux sociaux,strategie'],
+  ['Rédacteur web', 'com', 'redaction,seo,web,contenus,articles,editorial,blog,relecture,ligne editoriale'],
+  ['Assistant de direction', 'gest', 'assistanat,agenda,organisation,courrier,reunions,deplacements,comptes rendus,confidentialite,office,secretariat'],
+  ['Responsable administratif et financier', 'gest', 'comptabilite,budget,gestion,tresorerie,reporting,paie,administratif,financier,controle de gestion,encadrement'],
+  ['Comptable', 'gest', 'comptabilite,bilan,facturation,tva,saisie,rapprochement,paie,clients,fournisseurs,excel'],
+  ['Gestionnaire de paie', 'gest', 'paie,bulletins,cotisations,social,dsn,absences,contrats,droit du travail,rh,administratif'],
+  ['Chargé de recrutement', 'gest', 'recrutement,entretiens,offres,sourcing,candidats,integration,rh,annonces,cv,evaluation'],
+  ['Responsable ressources humaines', 'gest', 'rh,ressources humaines,recrutement,formation,droit du travail,paie,gestion des carrieres,social,entretiens,encadrement'],
+  ['Responsable d’équipe ou manager de proximité', 'gest', 'encadrement,equipe,management,planning,objectifs,indicateurs,formation,animation,organisation,entretiens'],
+  ['Chef de projet', 'gest', 'projet,planning,budget,coordination,cahier des charges,suivi,risques,equipe,reporting,livrables'],
+  ['Technico-commercial', 'vente', 'commercial,technique,client,devis,negociation,prospection,industrie,offre,cahier des charges,suivi'],
+  ['Chargé de clientèle', 'vente', 'client,relation client,reclamations,suivi,fidelisation,commandes,telephone,conseil,satisfaction'],
+  ['Commercial B2B', 'vente', 'prospection,negociation,clients,vente,objectifs,crm,rendez vous,portefeuille,devis,contrats'],
+  ['Responsable de magasin', 'vente', 'magasin,equipe,ventes,stock,encadrement,merchandising,objectifs,caisse,planning,client'],
+  ['Formateur professionnel', 'form', 'formation,formateur,pedagogie,animation,transmission,evaluation,programme,adultes,ingenierie,modules'],
+  ['Responsable formation', 'form', 'formation,plan de formation,budget,opco,besoins,organismes,evaluation,competences,rh,planning'],
+  ['Enseignant technique (lycée professionnel)', 'form', 'enseignement,pedagogie,eleves,technique,cours,evaluation,projets,maintenance,atelier,formation'],
+  ['Éducateur spécialisé', 'sante', 'accompagnement,educatif,social,public,projet individuel,famille,ecoute,equipe,handicap'],
+  ['Coordinateur de service d’aide à domicile', 'sante', 'coordination,planning,intervenants,aide a domicile,clients,qualite,encadrement,famille,social'],
+  ['Responsable d’hôtel ou de restauration', 'hotel', 'hotel,restauration,equipe,accueil,planning,budget,clients,securite,encadrement,qualite'],
+  ['Conseiller voyages', 'hotel', 'voyages,tourisme,reservation,client,conseil,billetterie,sejours,vente,gds'],
+];
+const getJobs = () => METIERS.concat((S.set.myJobs || []).map(j => [j.n, j.d || '', j.k])).filter(m => !(S.set.hideJobs || []).includes(m[0]));
+function matchJobs(cv) {
+  const d = cv.data, txt = ' ' + norm([d.identity.titre, d.resume, d.domaines, d.loisirs, d.extra, ...act(d.experiences).flatMap(e => [e.poste, e.entreprise, e.desc]), ...act(d.formations).flatMap(f => [f.diplome, f.ecole, f.desc]), ...act(d.competences).map(c => c.nom), ...act(d.langues).map(l => l.nom), ...act(d.certifs).map(c => c.nom)].join(' ')) + ' ';
+  const doms = S.set.doms || [], only = !!S.set.onlyDoms && doms.length;
+  const out = [];
+  for (const [n, dm, kws] of getJobs()) {
+    if (only && !doms.includes(dm)) continue;
+    const ks = String(kws).split(',').map(x => norm(x).trim()).filter(Boolean), ok = [], ko = [];
+    ks.forEach(k => { const hit = k.includes(' ') ? txt.includes(' ' + k) : new RegExp('(^| )' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(txt); (hit ? ok : ko).push(k); });
+    if (ok.length < 2) continue;
+    let pct = Math.min(100, Math.round(100 * ok.length / Math.max(4, ks.length * 0.55)));
+    const inDom = doms.includes(dm); if (doms.length) pct = inDom ? Math.min(100, Math.round(pct * 1.15)) : Math.round(pct * 0.8);
+    out.push({ n, dm, pct, ok, ko: ko.slice(0, 5) });
+  }
+  return out.sort((x, y) => y.pct - x.pct);
+}
+
 /* ============ mode démo ============ */
-const JOBSITES = [['ft', 'France Travail'], ['indeed', 'Indeed'], ['li', 'LinkedIn'], ['apec', 'Apec'], ['wttj', 'Welcome to the Jungle'], ['hw', 'HelloWork']];
-const siteUrl = (k, q, l) => { q = encodeURIComponent(q.trim()); l = encodeURIComponent(l.trim()); return ({
-  ft: `https://candidat.francetravail.fr/offres/recherche?motsCles=${q}`,
-  indeed: `https://fr.indeed.com/jobs?q=${q}&l=${l}`,
-  li: `https://www.linkedin.com/jobs/search/?keywords=${q}&location=${l}`,
-  apec: `https://www.apec.fr/candidat/recherche-emploi.html/emploi?motsCles=${q}`,
-  wttj: `https://www.welcometothejungle.com/fr/jobs?query=${q}`,
-  hw: `https://www.hellowork.com/fr-fr/emploi/recherche.html?k=${q}&l=${l}`,
-})[k]; };
+const JOBSITES = [
+  { id: 'ft', n: 'France Travail', u: 'https://candidat.francetravail.fr/offres/recherche?motsCles={q}' },
+  { id: 'indeed', n: 'Indeed', u: 'https://fr.indeed.com/jobs?q={q}&l={l}' },
+  { id: 'li', n: 'LinkedIn', u: 'https://www.linkedin.com/jobs/search/?keywords={q}&location={l}' },
+  { id: 'apec', n: 'Apec', u: 'https://www.apec.fr/candidat/recherche-emploi.html/emploi?motsCles={q}' },
+  { id: 'wttj', n: 'Welcome to the Jungle', u: 'https://www.welcometothejungle.com/fr/jobs?query={q}' },
+  { id: 'hw', n: 'HelloWork', u: 'https://www.hellowork.com/fr-fr/emploi/recherche.html?k={q}&l={l}' },
+];
+const getSites = () => { if (!Array.isArray(S.set.sites)) S.set.sites = clone(JOBSITES); return S.set.sites; };
+const siteUrl = (u, q, l) => u.replace(/\{q\}/g, encodeURIComponent(q.trim())).replace(/\{l\}/g, encodeURIComponent(l.trim()));
+function siteSheet() {
+  const L = getSites(), sn = ui.sn || (ui.sn = { n: '', u: '' });
+  openSheet(`<div class="sh"><h2>Sites d’emploi</h2><button class="ib" data-act="closesheet">✕</button></div>
+   <div class="small muted">👁 pour afficher ou masquer, ✕ pour retirer. Ajoute n’importe quel site : fais une recherche dessus, copie l’adresse de la page, colle-la ci-dessous. L’appli remplace ton métier et ta ville par {q} et {l}.</div>
+   <div>${L.map(x => `<div class="skill"><button class="ib sm" data-act="sitetoggle" data-v="${x.id}" aria-label="Afficher ou masquer">${x.off ? '🚫' : '👁'}</button><span style="flex:1;${x.off ? 'opacity:.5' : ''}">${esc(x.n)}</span><button class="ib sm" data-act="sitedel" data-v="${x.id}" aria-label="Retirer">✕</button></div>`).join('') || '<div class="small muted">Aucun site : ajoute-en un.</div>'}</div>
+   <label class="f">Nom du site<input data-u="sn.n" value="${esc(sn.n)}" placeholder="Ex. Jooble"></label>
+   <label class="f">Adresse d’une recherche sur ce site<input data-u="sn.u" value="${esc(sn.u)}" placeholder="https://…?q=chargé+de+communication&l=Lyon"></label>
+   <div class="row2"><button class="btn" data-act="siteadd" style="flex:1">Ajouter</button><button class="btn ghost" data-act="sitereset" style="flex:1">Remettre la liste de départ</button></div>`);
+}
 const OFFRES = [
   { poste: 'Chargé(e) de communication digitale', ent: 'Maison Verdier', txt: `Maison Verdier, entreprise familiale lyonnaise de 80 salariés (vins et spiritueux), recrute un(e) Chargé(e) de communication digitale en CDI.
 
@@ -949,7 +1091,7 @@ function demoState() {
   c1.updated = Date.now() - 1000; c2.updated = Date.now();
   const J = (o, i, p) => ({ id: uid(), poste: o.poste, entreprise: o.ent, url: '', statut: 'aenvoyer', cvId: c1.id, date: '', relance: '', notes: '', offre: o.txt || '', created: Date.now() - 864e5 * (p.age || 3), ...p });
   const jobs = [
-    J(OFFRES[0], 0, { statut: 'entretien', date: dIso(-9), notes: 'Entretien RH jeudi à 14 h. Préparer 3 exemples chiffrés (méthode STAR) et 3 questions à poser.', url: 'https://exemple.fr/offre-maison-verdier', age: 10 }),
+    J(OFFRES[0], 0, { statut: 'entretien', date: dIso(-9), notes: 'Entretien RH jeudi à 14 h. Préparer 3 exemples chiffrés (méthode STAR) et 3 questions à poser.', url: 'https://exemple.fr/offre-maison-verdier', age: 10, rdv: dIso(3) + 'T14:00', rdvDur: 60, rdvLieu: 'Visio Teams' }),
     J(OFFRES[1], 1, { statut: 'envoyee', cvId: c2.id, date: dIso(-6), relance: dIso(2), notes: 'Envoyé avec la version « Chef de projet digital ».', age: 7 }),
     J(OFFRES[2], 2, { statut: 'aenvoyer', notes: 'Date limite dans 5 jours. Lettre de motivation à écrire.', age: 1 }),
     J({ poste: 'Community manager senior', ent: 'Studio Mireille' }, 3, { statut: 'offre', date: dIso(-20), notes: 'Proposition reçue : réponse attendue sous 7 jours, salaire à négocier.', age: 21 }),
@@ -972,6 +1114,47 @@ function demoOff() {
   delete S.demo; try { localStorage.removeItem(KEY + '.real'); } catch (e) { }
   saveNow(); ui.ed = null; ui.tab = 'cv'; ui.offre = { text: '', cvId: '', entreprise: '', poste: '', res: null, mask: true, settitle: false };
   $('#prev')?.remove(); closeSheet(); applySettings(); render(); scrollTo(0, 0); toast('Démo quittée : tes données sont revenues');
+}
+
+
+/* ============ agenda : AgenDam / .ics ============ */
+const pad2 = n => String(n).padStart(2, '0');
+const ymdLocal = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+function agendaEvents() {
+  const out = [], today = ymdLocal(new Date());
+  for (const j of S.jobs) {
+    const nm = `${j.poste || 'Poste'}${j.entreprise ? ' – ' + j.entreprise : ''}`;
+    if (j.rdv && /^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(j.rdv)) {
+      const d = j.rdv.slice(0, 10), t = j.rdv.slice(11, 16), m = +t.slice(0, 2) * 60 + +t.slice(3, 5), e = Math.min(1439, m + (+j.rdvDur || 60));
+      out.push({ id: 'cv-' + j.id + '-rdv', title: 'Entretien : ' + nm, allDay: false, start: d, end: d, startTime: t, endTime: `${pad2(Math.floor(e / 60))}:${pad2(e % 60)}`, place: j.rdvLieu || '', note: j.notes || '' });
+    }
+    if (j.relance && !['refus', 'offre'].includes(j.statut)) out.push({ id: 'cv-' + j.id + '-rel', title: 'Relancer : ' + nm, allDay: true, start: j.relance, end: j.relance, startTime: '09:00', endTime: '10:00', place: '', note: '' });
+  }
+  return out.filter(e => e.start >= today).sort((x, y) => (x.start + x.startTime).localeCompare(y.start + y.startTime));
+}
+const agPicked = () => { const off = ui.agOff || (ui.agOff = {}); return agendaEvents().filter(e => !off[e.id]); };
+const b64u = t => btoa(unescape(encodeURIComponent(t))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const agLink = evs => 'https://dam-cigogne.github.io/agenda/#cv=' + b64u(JSON.stringify({ app: 'cv', v: 1, ev: evs }));
+const icsEsc = t => String(t || '').replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+function buildIcs(evs) {
+  const st = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, ''), d = x => x.replace(/-/g, '');
+  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//CV en poche//FR', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
+  for (const e of evs) {
+    L.push('BEGIN:VEVENT', `UID:${e.id}@cvenpoche`, `DTSTAMP:${st}`);
+    if (e.allDay) { const n = new Date(e.start + 'T12:00:00'); n.setDate(n.getDate() + 1); L.push(`DTSTART;VALUE=DATE:${d(e.start)}`, `DTEND;VALUE=DATE:${d(ymdLocal(n))}`); }
+    else L.push(`DTSTART:${d(e.start)}T${e.startTime.replace(':', '')}00`, `DTEND:${d(e.end)}T${e.endTime.replace(':', '')}00`);
+    L.push(`SUMMARY:${icsEsc(e.title)}`); if (e.place) L.push(`LOCATION:${icsEsc(e.place)}`); if (e.note) L.push(`DESCRIPTION:${icsEsc(e.note)}`);
+    if (!e.allDay) L.push('BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Rappel', 'TRIGGER:-PT1H', 'END:VALARM');
+    L.push('END:VEVENT');
+  }
+  L.push('END:VCALENDAR'); return L.join('\r\n');
+}
+function agendaSheet() {
+  const L = agendaEvents(), off = ui.agOff || (ui.agOff = {});
+  openSheet(`<div class="sh"><h2>Agenda</h2><button class="ib" data-act="closesheet">✕</button></div>
+   <div class="small muted">Entretiens et relances à venir. Coche ceux que tu veux envoyer. Ajoute la date et l’heure d’un entretien dans la fiche de la candidature.</div>
+   <div>${L.length ? L.map(e => `<div class="skill"><button class="ib sm" data-act="agsel" data-v="${e.id}" aria-label="Choisir">${off[e.id] ? '☐' : '☑'}</button><span style="flex:1;${off[e.id] ? 'opacity:.5' : ''}"><b>${esc(e.title)}</b><br><span class="small muted">${fmtDate(e.start)}${e.allDay ? ' (journée)' : ' · ' + e.startTime.replace(':', ' h ') + ' – ' + e.endTime.replace(':', ' h ')}${e.place ? ' · ' + esc(e.place) : ''}</span></span></div>`).join('') : '<div class="empty small">Rien à venir : ajoute une date d’entretien ou de relance dans une candidature.</div>'}</div>
+   ${L.length ? `<button class="btn" data-act="agsend">Envoyer vers AgenDam</button><div class="row2"><button class="btn ghost" data-act="agcopy" style="flex:1">Copier le lien</button><button class="btn ghost" data-act="agics" style="flex:1">Fichier .ics</button></div><div class="small muted">AgenDam : le lien s’ouvre et propose d’ajouter les rendez-vous. Le fichier .ics marche avec Apple, Outlook et Google Agenda.</div>` : ''}`);
 }
 
 /* ============ événements ============ */
@@ -1052,7 +1235,27 @@ const ACT = {
   clreset: () => { S.checks = {}; save(); render(); },
   stab: v => { ui.stab = v; render(); },
   demo: () => demoOn(),
-  jobsite: v => { const so = ui.so; if (!so.q.trim()) { toast('Indique d’abord un métier'); return; } window.open(siteUrl(v, so.q, so.l), '_blank', 'noopener'); },
+  gomet: () => { ui.tab = 'regl'; ui.stab = 'met'; render(); scrollTo(0, 0); },
+  mjmore: () => { ui.mjAll = !ui.mjAll; render(); },
+  mjsearch: v => { ui.so.q = v.split(' (')[0].split(' ou ')[0]; ui.so.init = 1; render(); document.getElementById('sojobs')?.scrollIntoView({ behavior: 'smooth' }); toast('Choisis un site ci-dessous'); },
+  mjcv: v => { const cv = S.cvs.find(c => c.id === ui.offre.cvId) || S.cvs[0]; if (!cv) return; const c = clone(cv); c.id = uid(); c.name = cv.name + ' – ' + v.split(' (')[0]; c.created = c.updated = Date.now(); c.data.identity.titre = v.split(' (')[0]; delete c.review; S.cvs.push(c); save(); ui.ed = c.id; ui.edTab = 'infos'; ui.resetForm = 1; toast('CV créé : adapte le profil et les compétences'); render(); scrollTo(0, 0); },
+  mjhide: v => { (S.set.hideJobs || (S.set.hideJobs = [])).push(v); save(); render(); },
+  mjunhide: v => { S.set.hideJobs = (S.set.hideJobs || []).filter(x => x !== v); save(); render(); },
+  domtoggle: v => { const d = S.set.doms || (S.set.doms = []); const i = d.indexOf(v); if (i >= 0) d.splice(i, 1); else d.push(v); save(); render(); },
+  onlydoms: () => { S.set.onlyDoms = !S.set.onlyDoms; save(); render(); },
+  mjadd: () => { const m = ui.mj || {}; if (!(m.n || '').trim() || !(m.k || '').trim()) { toast('Indique un nom et des mots-clés'); return; } (S.set.myJobs || (S.set.myJobs = [])).push({ n: m.n.trim(), d: m.d || '', k: m.k.split(/[,;\n]/).map(x => x.trim()).filter(Boolean).join(',') }); ui.mj = { n: '', k: '', d: '' }; save(); render(); toast('Métier ajouté'); },
+  mjdel: v => { S.set.myJobs = (S.set.myJobs || []).filter(x => x.n !== v); save(); render(); },
+  agenda: () => agendaSheet(),
+  agsel: v => { const off = ui.agOff || (ui.agOff = {}); off[v] = !off[v]; agendaSheet(); },
+  agsend: () => { const e = agPicked(); if (!e.length) { toast('Coche au moins un rendez-vous'); return; } window.open(agLink(e), '_blank'); },
+  agcopy: () => { const e = agPicked(); if (!e.length) { toast('Coche au moins un rendez-vous'); return; } const u = agLink(e); if (navigator.share) navigator.share({ url: u, title: 'Rendez-vous CV en poche' }).catch(() => { }); else navigator.clipboard?.writeText(u).then(() => toast('Lien copié'), () => toast('Copie impossible')); },
+  agics: () => { const e = agPicked(); if (!e.length) { toast('Coche au moins un rendez-vous'); return; } download('rendez-vous-cv.ics', buildIcs(e), 'text/calendar'); },
+  jobsite: v => { const so = ui.so; if (!so.q.trim()) { toast('Indique d’abord un métier'); return; } const x = getSites().find(y => y.id === v); if (x) window.open(siteUrl(x.u, so.q, so.l), '_blank', 'noopener'); },
+  sites: () => siteSheet(),
+  sitetoggle: (v) => { const x = getSites().find(y => y.id === v); if (x) { x.off = !x.off; save(); siteSheet(); render(); } },
+  sitedel: v => { S.set.sites = getSites().filter(y => y.id !== v); save(); siteSheet(); render(); },
+  sitereset: () => { S.set.sites = clone(JOBSITES); save(); siteSheet(); render(); },
+  siteadd: () => { const sn = ui.sn || {}; let u = (sn.u || '').trim(), n = (sn.n || '').trim(); if (!/^https?:\/\//.test(u)) { toast('Colle une adresse qui commence par https://'); return; } if (!n) { try { n = new URL(u).hostname.replace(/^www\./, ''); } catch { n = 'Site'; } } const so = ui.so, rp = (t, key) => { const v = (key || '').trim(); if (!v) return t; const tk = key === so.q ? '{q}' : '{l}', e = encodeURIComponent(v); for (const f of [e, e.replace(/%20/g, '+'), e.replace(/%20/g, '-'), v.replace(/ /g, '+'), v.replace(/ /g, '-'), v]) if (f) t = t.split(f).join(tk); return t; }; if (!u.includes('{q}')) u = rp(u, so.q); if (!u.includes('{l}')) u = rp(u, so.l); getSites().push({ id: uid(), n, u }); ui.sn = { n: '', u: '' }; save(); siteSheet(); render(); toast(u.includes('{q}') ? 'Site ajouté' : 'Site ajouté (sans recherche : indique ton métier dans l’adresse)'); },
   pasteoffre: () => { if (!navigator.clipboard?.readText) { toast('Colle à la main dans la zone de texte'); return; } navigator.clipboard.readText().then(t => { t = (t || '').trim(); if (!t) { toast('Le presse-papiers est vide'); return; } if (/^https?:\/\/\S+$/.test(t)) { toast('C’est un lien : ouvre la page et copie le texte de l’annonce'); return; } ui.offre.text = t; ui.offre.res = null; render(); toast('Annonce collée'); }, () => toast('Accès refusé : colle à la main dans la zone de texte')); },
   copydl: () => { navigator.clipboard?.writeText(ui.dl || '').then(() => toast('Copié'), () => { const t = $('#dltxt'); t.select(); toast('Sélectionné : copie avec le menu'); }); },
   demoquit: () => demoOff(),
