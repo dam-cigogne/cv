@@ -23,8 +23,9 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.5.1';
 const CHANGELOG = [
+  { v: '1.5.1', d: '01/11/2026', l: ['Recadrage photo : le cadre ne s’écrase plus sur iPhone et iPad', 'Champs texte qui s’agrandissent tout seuls : les longs intitulés restent lisibles en entier'] },
   { v: '1.5.0', d: '01/11/2026', l: ['Photo : le recadrage marche maintenant sur iPhone et iPad (glisser, appui long, pincer pour zoomer)', 'Glisser-déposer des rubriques réparé sur iPhone et iPad', 'Mode démo : faux CV, vraies annonces, suivi complet — on le quitte d’un bouton et tes données reviennent', 'Guide du CV complété : mise en page, langues et loisirs, situations (reconversion, débutant, militaire, senior, anglais), lettre de motivation, entretien, LinkedIn', 'Suivi : bouton pour relire et analyser l’annonce d’une candidature', 'Réglages > Mises à jour : message « Application à jour · version X » (ou « Mise à jour disponible »), vérifié à chaque ouverture', 'Onglets du côté : un onglet par carte, comme Comptes en ligne'] },
   { v: '1.4.0', d: '01/11/2026', l: ['Écran partagé : le vrai CV à côté (ou au-dessus) des options, mis à jour en direct, poignée pour redimensionner', 'Mise en page : rubriques à déplacer par appui long, colonne principale ou latérale, taille par rubrique, deux colonnes sur tous les modèles', 'Option « Une seule page » : le texte se règle tout seul', 'Bouton ✨ Auto : choisit le meilleur modèle et la meilleure mise en page (annulable)', '20 couleurs de CV + couleur libre', 'Recadrage de la photo : appui long puis glisser pour la déplacer, curseur de zoom'] },
   { v: '1.3.0', d: '01/11/2026', l: ['Onglets verticaux sur le bord droit (comme Comptes en ligne) partout : Réglages, éditeur, Suivi, Guide', 'Mode « Sur le côté » activé par défaut'] },
@@ -416,7 +417,7 @@ function render() {
   window.scrollTo(0, y);
   if (ui.ed && curCV()) {
     const f = $('.edform'); if (f && !ui.resetForm) f.scrollTop = fs; ui.resetForm = 0;
-    updLive(); const l = $('#lps'); if (l) l.scrollTop = ls;
+    updLive(); const l = $('#lps'); if (l) l.scrollTop = ls; growAll();
   }
 }
 function toast(m) {
@@ -463,7 +464,7 @@ function viewEditor(cv) {
    <div class="edform">${cv.review ? `<div class="banner"><span>CV importé : vérifie chaque rubrique, la lecture automatique peut se tromper. Le texte non classé est dans « Plus ».</span><button class="btn sm ghost" data-act="dismiss">OK</button></div>` : ''}${body}</div></div>
    <div class="edbar"><div class="in"><button class="btn" data-act="prev" data-id="${cv.id}">Plein écran et PDF</button></div></div>`;
 }
-const fld = (cv, label, path, ph = '', type = 'text') => `<label class="f">${label}<input type="${type}" data-p="${path}" value="${esc(path.split('.').reduce((o, k) => o?.[k], cv))}" placeholder="${esc(ph)}" autocomplete="off"></label>`;
+const fld = (cv, label, path, ph = '', type = 'text') => { const v = path.split('.').reduce((o, k) => o?.[k], cv); return type === 'text' ? `<label class="f">${label}<textarea class="ag" rows="1" data-p="${path}" placeholder="${esc(ph)}" autocomplete="off">${esc(v)}</textarea></label>` : `<label class="f">${label}<input type="${type}" data-p="${path}" value="${esc(v)}" placeholder="${esc(ph)}" autocomplete="off"></label>`; };
 function edInfos(cv) {
   const i = cv.data.identity;
   return `<div class="card"><div class="rowline"><div class="photo" style="${i.photo ? `background-image:url('${i.photo}')` : ''}">${i.photo ? '' : '👤'}</div>
@@ -482,7 +483,11 @@ function itemTools(l, it, idx, len) {
   return `<div class="tools"><label class="swrow" style="gap:8px"><span class="small">Inclure dans ce CV</span><span class="sw"><input type="checkbox" data-l="${l}" data-i="${it.id}" data-k="on" data-r="1" ${it.on !== false ? 'checked' : ''}><i></i></span></label>
    <div class="row2"><button class="ib sm" data-act="mv" data-l="${l}" data-i="${it.id}" data-d="-1" ${idx === 0 ? 'disabled' : ''}>↑</button><button class="ib sm" data-act="mv" data-l="${l}" data-i="${it.id}" data-d="1" ${idx === len - 1 ? 'disabled' : ''}>↓</button><button class="ib sm" data-act="delitem" data-l="${l}" data-i="${it.id}" aria-label="Supprimer">🗑</button></div></div>`;
 }
-const li = (l, it, k, label, ph = '', type = 'text') => `<label class="f">${label}<input type="${type}" data-l="${l}" data-i="${it.id}" data-k="${k}" value="${esc(it[k])}" placeholder="${esc(ph)}"></label>`;
+const li = (l, it, k, label, ph = '', type = 'text') => type === 'text' ? `<label class="f">${label}<textarea class="ag" rows="1" data-l="${l}" data-i="${it.id}" data-k="${k}" placeholder="${esc(ph)}">${esc(it[k])}</textarea></label>` : `<label class="f">${label}<input type="${type}" data-l="${l}" data-i="${it.id}" data-k="${k}" value="${esc(it[k])}" placeholder="${esc(ph)}"></label>`;
+const grow = el => { el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; };
+const growAll = () => document.querySelectorAll('.edform textarea').forEach(el => { if (el.offsetParent !== null) grow(el); });
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.classList?.contains('ag')) { e.preventDefault(); e.target.blur(); } });
+document.addEventListener('input', e => { if (e.target.matches?.('.edform textarea')) grow(e.target); });
 function edParcours(cv) {
   const L = cv.data.experiences;
   return `<div class="small muted">Désactive une expérience pour l’exclure de ce CV sans la perdre.</div>
@@ -971,7 +976,7 @@ document.addEventListener('change', e => {
   if (el.dataset.r) render();
   if (el.dataset.p && /^show\./.test(el.dataset.p) || el.dataset.p === 'photo') { /* déjà enregistré */ }
 });
-document.addEventListener('toggle', e => { const d = e.target; if (d.dataset && d.dataset.d) ui.open[d.dataset.d] = d.open; }, true);
+document.addEventListener('toggle', e => { const d = e.target; if (d.dataset && d.dataset.d) { ui.open[d.dataset.d] = d.open; growAll(); } }, true);
 
 const ACT = {
   nav: v => { ui.tab = v; ui.ed = null; render(); scrollTo(0, 0); },

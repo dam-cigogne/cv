@@ -305,3 +305,7 @@ body.demo .edsplit .edhead{padding-top:8px}
 .updst small{font-weight:400;color:var(--muted)}
 .updst.ok{background:#DCF5E6;color:#0B6B3A}.updst.nw{background:#FFE9D6;color:#A3400C}.updst.er{background:#FBE2E0;color:#9B2C22}
 [data-theme="dark"] .updst.ok{background:#12372A;color:#8FE3B5}[data-theme="dark"] .updst.nw{background:#42260F;color:#FFC38F}[data-theme="dark"] .updst.er{background:#401B18;color:#FFB4AC}
+
+#cropf{flex:none;min-width:260px;min-height:260px}
+label.f textarea.ag{min-height:0;resize:none;overflow:hidden}
+.edform textarea{overflow:hidden}
