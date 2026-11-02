@@ -335,3 +335,14 @@ body.filt-side .vt .vl{line-height:1.2}
 @media (min-width:640px) and (orientation:landscape), (min-width:900px){
   body.filt-side .vt.edrail{max-height:100%;overflow-y:auto}
 }
+
+#cmp{position:fixed;inset:0;z-index:60;background:#454c5e;display:flex;flex-direction:column}
+#cmp .bar{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:max(10px,env(safe-area-inset-top,0px)) 12px 10px;background:var(--surface);border-bottom:1px solid var(--line)}
+#cmp .scroll{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:0 0 40px}
+#cmp .cols{display:flex;gap:8px;padding:0 8px;width:max-content;min-width:100%;justify-content:center;align-items:flex-start;box-sizing:border-box}
+#cmp .col{flex:none}
+#cmp .ch{position:sticky;top:0;z-index:3;background:var(--surface);color:var(--ink);padding:6px 8px;border-radius:0 0 10px 10px;margin-bottom:8px;display:flex;flex-direction:column;gap:1px;font-size:12px;line-height:1.25;overflow:hidden}
+#cmp .ch b{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
+#cmp .ch span{color:var(--muted);font-size:11px}
+#cmp .pgbox{margin:0 0 8px;position:relative;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.45)}
+body.demo #cmp{top:calc(30px + env(safe-area-inset-top,0px))}
