@@ -23,8 +23,9 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.9.2';
+const APP_VERSION = '1.9.3';
 const CHANGELOG = [
+  { v: '1.9.3', d: '02/11/2026', l: ['IA : choix « Gratuit / Claude » dans Réglages > IA (Claude réservé au propriétaire du relais)', 'IA : la fenêtre du texte proposé indique quelle IA l’a écrit', 'Guide : fiche « Prêter l’appli à un proche »'] },
   { v: '1.9.2', d: '02/11/2026', l: ['Réglages > IA : état clair (prête, mot de passe manquant, non testée…) et fonctionnement expliqué en 3 étapes', 'Nouveau : « Comparer des CV » : 2 ou 3 CV côte à côte à l’écran (même en portrait), avec zoom, nombre de pages et note de chaque CV'] },
   { v: '1.9.1', d: '02/11/2026', l: ['Réglages > IA : l’adresse du relais est préremplie, il ne reste que le mot de passe à saisir (une seule fois)', 'Guide : nouvelle rubrique « Mode d’emploi » (tout l’essentiel de l’appli) et « Aide IA »'] },
   { v: '1.9.0', d: '02/11/2026', l: ['Nouveau : aide IA facultative (Réglages > IA), désactivée par défaut', 'IA : écrire ou améliorer le profil, réécrire les puces d’une expérience', 'IA : lettre de motivation et préparation d’entretien depuis une annonce (onglet Offre)'] },
@@ -384,7 +385,8 @@ const GUIDE = [
   { c: 'ia', t: 'Écrire ou améliorer le profil', l: ['Mes CV > ouvre un CV > Infos > carte Profil', 'Touche « ✨ Écrire ou améliorer avec l’IA »', 'Relis le texte proposé et modifie-le au besoin', '« Utiliser ce texte » remplace ton profil ; « Copier » le garde ailleurs', 'Plus ton CV est rempli (titre, expériences), meilleur est le résultat'] },
   { c: 'ia', t: 'Améliorer les puces d’une expérience', l: ['Dans l’éditeur, ouvre une expérience', 'Écris tes missions, même en vrac (une idée par ligne)', 'Touche « ✨ Améliorer les puces avec l’IA »', 'Vérifie chaque ligne : remplace [chiffre à compléter] par un vrai chiffre, ou supprime-le', 'Le bouton « Utiliser ce texte » remplace tes missions'] },
   { c: 'ia', t: 'Lettre de motivation et entretien', l: ['Onglet Offre > colle l’annonce (« Coller l’annonce »), choisis le CV à utiliser', 'Renseigne le poste et l’entreprise : la lettre en sera plus précise', 'Touche « Analyser », puis dans la carte « Aide IA » : « ✨ Lettre de motivation » ou « ✨ Préparer l’entretien »', 'Copie le texte, colle-le dans ton mail ou ton traitement de texte et personnalise-le', 'Pour l’entretien : prépare tes réponses à voix haute avec les pistes proposées'] },
-  { c: 'ia', t: 'Bien l’utiliser, limites et confidentialité', p: 'L’IA est une aide à la rédaction, pas un verdict.', l: ['Relis toujours : elle peut se tromper ou reformuler de façon trop générale', 'Elle ne connaît que ton CV et l’annonce. Elle a pour consigne de ne rien inventer et marque [chiffre à compléter] quand un chiffre manque', 'N’envoie rien que tu ne veux pas partager : quand tu touches un bouton ✨, le texte concerné part vers ton relais puis vers le modèle d’IA', 'Si l’IA est désactivée, rien ne quitte ton appareil', 'Gratuit dans la limite du quota Cloudflare. Si un message dit que l’IA ne répond pas, réessaie un peu plus tard', 'Option Claude (payante, plus fine) : se règle côté Cloudflare, sans rien changer dans l’appli'] },
+  { c: 'ia', t: 'Bien l’utiliser, limites et confidentialité', p: 'L’IA est une aide à la rédaction, pas un verdict.', l: ['Relis toujours : elle peut se tromper ou reformuler de façon trop générale', 'Elle ne connaît que ton CV et l’annonce. Elle a pour consigne de ne rien inventer et marque [chiffre à compléter] quand un chiffre manque', 'N’envoie rien que tu ne veux pas partager : quand tu touches un bouton ✨, le texte concerné part vers ton relais puis vers le modèle d’IA', 'Si l’IA est désactivée, rien ne quitte ton appareil', 'Gratuit dans la limite du quota Cloudflare. Si un message dit que l’IA ne répond pas, réessaie un peu plus tard', 'Claude (payant, plus fin) : choisis « Claude » dans Réglages > IA. Il demande une clé Claude configurée dans Cloudflare et il est réservé au propriétaire du relais'] },
+  { c: 'ia', t: 'Prêter l’appli à un proche', p: 'L’appli est publique : un proche l’utilise avec le lien, ses CV restent sur son appareil et tu ne vois rien de ses données. Pour l’IA, il lui faut un mot de passe à lui.', l: ['Sans mot de passe, il utilise l’appli normalement mais sans IA (le relais refuse)', 'Dans Cloudflare, ajoute son mot de passe au secret INVITES, par exemple marie:son-mot-de-passe (plusieurs personnes : sépare par une virgule)', 'Il l’entre dans Réglages > IA (l’adresse est déjà remplie), puis Enregistrer et Tester', 'Avec un mot de passe d’invité, l’IA gratuite seulement : tes crédits Claude ne sont jamais utilisés', 'Pour lui retirer l’accès : enlève son nom du secret INVITES', 'Ses textes envoyés à l’IA passent par ton Cloudflare (le relais ne les enregistre pas) : préviens-le'] },
   { c: 'offre', t: 'L’onglet Offre : vue d’ensemble', p: 'Cet onglet t’aide à trouver des postes, à comparer une annonce avec ton CV et à préparer une candidature. Tout est calculé sur ton appareil : ton CV et les annonces ne sont envoyés nulle part. L’appli ne se connecte pas aux sites d’emploi : tu ouvres l’annonce toi-même, puis tu la colles ici.', l: ['1. Métiers qui te correspondent : des idées de métiers classées d’après ton CV', '2. Trouver des offres : un site d’emploi s’ouvre avec ta recherche déjà remplie', '3. Adapter son CV à une annonce : tu colles l’annonce, l’appli la compare à ton CV', '4. Créer une version adaptée du CV, puis ajouter la candidature au Suivi'] },
   { c: 'offre', t: 'Métiers qui te correspondent', p: 'L’appli connaît une liste de métiers, chacun avec ses mots-clés typiques. Elle cherche ces mots dans tout ton CV : titre, profil, domaines, expériences, formations, compétences, langues et loisirs.', l: ['Un métier n’apparaît que si au moins 2 de ses mots-clés sont trouvés dans ton CV', 'Plus ton CV est détaillé, plus le classement est juste : un CV vide ne donne presque rien', 'Le CV utilisé est indiqué en haut de la carte (le premier de ta liste)', 'Dans Réglages > Métiers, choisis un ou plusieurs domaines : les métiers de ces domaines passent devant', '« Montrer uniquement ces domaines » masque tous les autres métiers'] },
   { c: 'offre', t: 'Lire les pourcentages', p: 'Le pourcentage mesure la part des mots-clés du métier que l’on retrouve dans ton CV. 100 % veut dire « ton CV parle déjà de tout ce qui caractérise ce métier », pas « tu seras embauché ».', l: ['Dans ton CV : les mots-clés du métier déjà présents chez toi', 'À mettre en avant ou acquérir : les mots-clés absents. Si tu maîtrises le sujet, ajoute-les à ton CV ; sinon, c’est une piste de formation', 'Les domaines choisis donnent un petit bonus (+15 %), les autres une petite réduction (−20 %)', 'Un score moyen n’est pas un mauvais signe : il peut simplement montrer que ton CV n’emploie pas les mêmes mots que le métier'] },
@@ -462,7 +464,7 @@ function render() {
 }
 /* ============ aide IA (facultative) ============ */
 const AI_URL = 'https://cv-ia.dam-cigogne.workers.dev';
-const AI = () => { const c = S.set.ai || (S.set.ai = { on: false, url: AI_URL, token: '' }); if (!c.url) c.url = AI_URL; return c; };
+const AI = () => { const c = S.set.ai || (S.set.ai = { on: false, url: AI_URL, token: '', prov: 'free' }); if (!c.url) c.url = AI_URL; if (!c.prov) c.prov = 'free'; return c; };
 const aiOn = () => !!(AI().on && AI().url);
 function cvPlain(cv) {
   const d = cv.data, L = [];
@@ -480,9 +482,10 @@ async function aiCall(task, input) {
   if (ui.aiBusy) return null;
   ui.aiBusy = true; toast('IA en cours… (quelques secondes)');
   try {
-    const r = await fetch(c.url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-token': c.token || '' }, body: JSON.stringify({ task, input }) });
+    const r = await fetch(c.url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-token': c.token || '' }, body: JSON.stringify({ task, input, provider: c.prov }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok || !j.text) { toast(j.error || 'L’IA ne répond pas (code ' + r.status + ')'); return null; }
+    ui.aiLast = j; if (j.note) toast(j.note, 4500);
     return j;
   } catch (e) { toast('Connexion impossible : vérifie l’adresse du relais'); return null; }
   finally { ui.aiBusy = false; }
@@ -490,7 +493,7 @@ async function aiCall(task, input) {
 function aiSheet(title, text, apply) {
   ui.aiRes = { apply };
   openSheet(`<div class="sh"><h2>${esc(title)}</h2><button class="ib" data-act="closesheet">✕</button></div>
-   <div class="small muted">Relis et corrige avant d’utiliser : l’IA peut se tromper et ne connaît que ton CV.</div>
+   <div class="small muted">${ui.aiLast ? 'Écrit par ' + (ui.aiLast.provider === 'claude' ? 'Claude' : 'l’IA gratuite') + '. ' : ''}Relis et corrige avant d’utiliser : l’IA peut se tromper et ne connaît que ton CV.</div>
    <textarea id="aiTxt" rows="12">${esc(text)}</textarea>
    <div class="row2">${apply ? `<button class="btn" data-act="aiuse" style="flex:1">Utiliser ce texte</button>` : ''}<button class="btn ghost" data-act="aicopy" style="flex:1">Copier</button></div>`);
 }
@@ -740,6 +743,9 @@ function tabRegl() {
     <button class="btn sm ghost" data-act="aiguide">Lire le guide « Aide IA »</button>
     <div class="updst">🔒 Quand tu utilises un bouton IA, le texte concerné (CV, annonce) est envoyé à ton relais puis au modèle d’IA. Sans l’IA activée, rien ne quitte ton appareil.</div>
     <button class="btn sm ${c.on ? '' : 'ghost'}" data-act="aitoggle">${c.on ? '☑ IA activée' : '☐ IA désactivée : touche pour activer'}</button>
+    <h3>Quelle IA ?</h3>
+    <div class="seg"><button class="${c.prov !== 'claude' ? 'on' : ''}" data-act="aiprov" data-v="free">Gratuit</button><button class="${c.prov === 'claude' ? 'on' : ''}" data-act="aiprov" data-v="claude">Claude</button></div>
+    <div class="small muted">${c.prov === 'claude' ? (c.can === false ? '⚠️ Claude n’est pas disponible avec ce mot de passe : l’IA gratuite sera utilisée.' : 'Claude écrit mieux, surtout les lettres. Il est payant et réservé au propriétaire du relais.') : 'L’IA gratuite convient pour reformuler et écrire un profil. Ses textes sont moins fins que ceux de Claude.'}</div>
     <label class="f">Adresse du relais<input data-u="aiu" value="${esc(ui.aiu)}" placeholder="https://cv-ia.ton-compte.workers.dev" autocapitalize="off" autocorrect="off"></label>
     <label class="f">Mot de passe du relais<input data-u="ait" type="password" value="${esc(ui.ait)}" autocapitalize="off" autocorrect="off"></label>
     <div class="row2"><button class="btn" data-act="aisave" style="flex:1">Enregistrer</button><button class="btn ghost" data-act="aitest" style="flex:1">Tester</button></div></div>`; }
@@ -1380,9 +1386,10 @@ const ACT = {
   stab: v => { ui.stab = v; render(); },
   demo: () => demoOn(),
   aitoggle: () => { AI().on = !AI().on; save(); render(); },
+  aiprov: (v) => { AI().prov = v; save(); render(); },
   aiguide: () => { ui.tab = 'guide'; ui.gcat = 'ia'; render(); scrollTo(0, 0); },
   aisave: () => { const c = AI(), ch = c.url !== (ui.aiu || '').trim().replace(/\/+$/, '') || c.token !== (ui.ait || '').trim(); c.url = (ui.aiu || '').trim().replace(/\/+$/, ''); c.token = (ui.ait || '').trim(); if (ch) c.okAt = 0; save(); toast('Réglages IA enregistrés'); render(); },
-  aitest: async () => { const c = AI(); c.url = (ui.aiu || '').trim().replace(/\/+$/, ''); c.token = (ui.ait || '').trim(); const on = c.on; c.on = true; const r = await aiCall('ping', {}); c.on = on; if (r) { c.okAt = Date.now(); toast('Connexion OK (' + (r.provider === 'claude' ? 'Claude' : 'Workers AI') + ')'); save(); render(); } },
+  aitest: async () => { const c = AI(); c.url = (ui.aiu || '').trim().replace(/\/+$/, ''); c.token = (ui.ait || '').trim(); const on = c.on; c.on = true; const r = await aiCall('ping', {}); c.on = on; if (r) { c.okAt = Date.now(); c.can = !!r.canClaude; toast('Connexion OK (' + (r.provider === 'claude' ? 'Claude' : 'IA gratuite') + (r.who ? ', invité ' + r.who : '') + ')' + (r.note ? ' : ' + r.note : ''), 4500); save(); render(); } },
   aiprofil: async () => { const cv = curCV(); if (!cv) return; const r = await aiCall('profil', { titre: cv.data.identity.titre, resume: cv.data.resume, cv: cvPlain(cv) }); if (r) aiSheet('Profil proposé', r.text, t => { cv.data.resume = t; touch(cv); closeSheet(); render(); toast('Profil remplacé'); }); },
   aipuces: async (v, el) => { const cv = curCV(), e = cv && cv.data.experiences.find(x => x.id === el.dataset.i); if (!e) return; if (!(e.desc || '').trim()) { toast('Écris d’abord quelques missions, même brutes'); return; } const r = await aiCall('puces', { poste: e.poste, entreprise: e.entreprise, text: e.desc }); if (r) aiSheet('Puces proposées', r.text, t => { e.desc = t; touch(cv); closeSheet(); render(); toast('Missions remplacées'); }); },
   ailettre: async () => { const o = ui.offre, cv = S.cvs.find(c => c.id === o.cvId); if (!cv || !o.text.trim()) { toast('Colle d’abord l’annonce'); return; } const r = await aiCall('lettre', { poste: o.poste, entreprise: o.entreprise, annonce: o.text, cv: cvPlain(cv) }); if (r) aiSheet('Lettre de motivation', r.text, null); },
