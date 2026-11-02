@@ -23,8 +23,9 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.9.4';
+const APP_VERSION = '1.9.5';
 const CHANGELOG = [
+  { v: '1.9.5', d: '02/11/2026', l: ['Admin : boutons directs vers chaque page utile (crédit et consommation Claude, clés API, secrets Cloudflare, Workers)'] },
   { v: '1.9.4', d: '02/11/2026', l: ['Nouveau : onglet « Admin » dans Réglages, visible seulement avec ton mot de passe propriétaire (état du relais, liens Cloudflare et console Claude, mémo des secrets, invités)', 'Guide : fiche « Voir mon crédit Claude »'] },
   { v: '1.9.3', d: '02/11/2026', l: ['IA : choix « Gratuit / Claude » dans Réglages > IA (Claude réservé au propriétaire du relais)', 'IA : la fenêtre du texte proposé indique quelle IA l’a écrit', 'Guide : fiche « Prêter l’appli à un proche »'] },
   { v: '1.9.2', d: '02/11/2026', l: ['Réglages > IA : état clair (prête, mot de passe manquant, non testée…) et fonctionnement expliqué en 3 étapes', 'Nouveau : « Comparer des CV » : 2 ou 3 CV côte à côte à l’écran (même en portrait), avec zoom, nombre de pages et note de chaque CV'] },
@@ -756,7 +757,14 @@ function tabRegl() {
     <div class="updst ok"><b>🔑 Mode propriétaire</b><br>Cet onglet n’apparaît que si le relais reconnaît ton mot de passe propriétaire. Aucun mot de passe ni clé n’est écrit ici.</div>
     <div class="small">IA gratuite : ${c.okAt ? '✅ testée' : '⚠️ à tester'} · Claude : ${c.can ? '✅ disponible' : '⛔ non disponible'} · Choix actuel : ${c.prov === 'claude' ? 'Claude' : 'Gratuit'}</div>
     <button class="btn sm" data-act="adminchk">Vérifier le relais maintenant</button></div>
-    <div class="card"><h3>Liens directs</h3>${a('https://console.anthropic.com', '💳 Crédit Claude (console)')}${a('https://dash.cloudflare.com', '☁️ Cloudflare')}${a(esc(c.url || AI_URL), '🔗 Relais cv-ia')}</div>
+    <div class="card"><h3>Liens directs</h3><div class="small muted">Chaque bouton ouvre directement la bonne page.</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">${[
+      ['💳', 'Voir mon crédit Claude', 'https://console.anthropic.com/settings/billing'],
+      ['📊', 'Voir ma consommation Claude', 'https://console.anthropic.com/usage'],
+      ['🔑', 'Mes clés API Claude', 'https://console.anthropic.com/settings/keys'],
+      ['🔐', 'Secrets du relais (ANTHROPIC_KEY, INVITES…)', 'https://dash.cloudflare.com/?to=/:account/workers/services/view/cv-ia/production/settings'],
+      ['☁️', 'Cloudflare : mes Workers', 'https://dash.cloudflare.com/?to=/:account/workers-and-pages']
+    ].map(([i, l, u]) => `<a class="btn" href="${u}" target="_blank" rel="noopener" style="text-decoration:none;display:block;text-align:left">${i} ${l}</a>`).join('')}</div></div>
     <div class="card"><h3>Voir mon crédit Claude</h3><ol class="small" style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px"><li>Ouvre console.anthropic.com et connecte-toi.</li><li>Accueil : solde des crédits. Détail dans Facturation (Billing).</li><li>Consommation de l’appli : Utilisation (Usage) ou Coûts.</li><li>Laisse le rechargement automatique désactivé. À zéro, Claude renvoie une erreur : repasse sur « Gratuit ».</li></ol><div class="small muted">Le solde exact ne peut pas s’afficher dans l’appli : Anthropic le réserve à sa console.</div></div>
     <div class="card"><h3>Les secrets Cloudflare</h3><div class="small muted">Cloudflare &gt; Workers &amp; Pages &gt; cv-ia &gt; Paramètres &gt; Variables et secrets (type Secret), puis Déployer.</div>
     <ul class="small" style="margin:4px 0;padding-left:20px;display:flex;flex-direction:column;gap:4px"><li><b>APP_TOKEN</b> : ton mot de passe (IA gratuite + Claude).</li><li><b>ANTHROPIC_KEY</b> : ta clé Claude (sk-ant-…), créée dans la console &gt; Clés d’API. Pour la renouveler : nouvelle clé, remplace le secret, Déployer.</li><li><b>INVITES</b> : mots de passe de tes proches (IA gratuite seulement).</li></ul></div>
