@@ -14,7 +14,7 @@ function setPath(o, path, v) {
   c[k[k.length - 1]] = v;
 }
 
-const TPLS = [['classique', 'Classique'], ['moderne', 'Moderne'], ['bandeau', 'Bandeau'], ['chrono', 'Chronologie'], ['elegant', 'Élégant'], ['minimal', 'Minimaliste'], ['sobre', 'Sobre (ATS)'], ['barre', 'Barre latérale'], ['tinte', 'Fond teinté'], ['souligne', 'Souligné'], ['double', 'Double filet']];
+const TPLS = [['classique', 'Classique'], ['moderne', 'Moderne'], ['bandeau', 'Bandeau'], ['chrono', 'Chronologie'], ['elegant', 'Élégant'], ['minimal', 'Minimaliste'], ['sobre', 'Sobre (ATS)'], ['barre', 'Barre latérale'], ['tinte', 'Fond teinté'], ['souligne', 'Souligné'], ['double', 'Double filet'], ['coin', 'Coin diagonal']];
 const ACCENTS = ['#1F5BD8', '#0E6B5C', '#7A3FB5', '#C2410C', '#B3372B', '#222B45', '#0F7C9D', '#8A6A12', '#2563EB', '#0891B2', '#059669', '#65A30D', '#CA8A04', '#EA580C', '#DC2626', '#DB2777', '#9333EA', '#4F46E5', '#475569', '#111111'];
 const SHORT = { resume: 'Profil', domaines: 'Domaines', experiences: 'Expériences', formations: 'Formations', competences: 'Compétences', langues: 'Langues', certifs: 'Certifications', loisirs: 'Loisirs' };
 const SECS = { resume: 'Profil', domaines: 'Domaines de compétences', experiences: 'Expériences professionnelles', formations: 'Formation', competences: 'Compétences', langues: 'Langues', certifs: 'Certifications', loisirs: 'Centres d’intérêt' };
@@ -25,7 +25,7 @@ const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert
 /* ============ version et historique des mises à jour ============ */
 const APP_VERSION = '1.9.6';
 const CHANGELOG = [
-  { v: '1.9.6', d: '03/11/2026', l: ['Comparaison : choisis l’ordre de gauche à droite (▲ ▼ dans la liste, ◀ ▶ sur chaque colonne)', 'Zoom + et − plus progressifs (environ 12 % par appui) dans la comparaison, l’aperçu plein écran et l’aperçu de l’éditeur', 'Importer un PDF : le CV converti garde son PDF d’origine et un bouton « Comparer avec le PDF d’origine » les affiche côte à côte ; nouveau choix « Le garder tel quel » (consulter, partager, comparer avec tes autres CV, sans rien modifier) ou « Le convertir en CV modifiable »', 'Style : bouton « Avis de l’IA sur la mise en page » (conseils d’après le modèle, la longueur, les rubriques et les puces)', 'Une seule page : si le CV est trop long pour tenir, un message clair l’explique (Style et aperçu) et le texte garde une taille lisible au lieu d’être réduit en vain', 'IA : pour le profil et les puces, l’ancien texte s’affiche à côté du texte proposé pour comparer avant de remplacer (l’un sous l’autre sur un petit écran)', 'Style : 6 nouveaux modèles de CV (Minimaliste, Sobre ATS, Barre latérale, Fond teinté, Souligné, Double filet)', 'Réglages > IA : le modèle utilisé est indiqué à côté de « Gratuit » (Llama 3.3 70B) et de « Claude » (Haiku)'] },
+  { v: '1.9.6', d: '03/11/2026', l: ['Lettre de motivation et préparation d’entretien : bouton « Enregistrer dans la candidature » (créée si besoin) ; la lettre se retrouve, se modifie et se copie dans la fiche de la candidature (onglet Suivi)', 'Comparaison : choisis l’ordre de gauche à droite (▲ ▼ dans la liste, ◀ ▶ sur chaque colonne)', 'Zoom + et − plus progressifs (environ 12 % par appui) dans la comparaison, l’aperçu plein écran et l’aperçu de l’éditeur', 'Importer un PDF : le CV converti garde son PDF d’origine et un bouton « Comparer avec le PDF d’origine » les affiche côte à côte ; nouveau choix « Le garder tel quel » (consulter, partager, comparer avec tes autres CV, sans rien modifier) ou « Le convertir en CV modifiable »', 'Style : bouton « Avis de l’IA sur la mise en page » (conseils d’après le modèle, la longueur, les rubriques et les puces)', 'Une seule page : si le CV est trop long pour tenir, un message clair l’explique (Style et aperçu) et le texte garde une taille lisible au lieu d’être réduit en vain', 'IA : pour le profil et les puces, l’ancien texte s’affiche à côté du texte proposé pour comparer avant de remplacer (l’un sous l’autre sur un petit écran)', 'Style : 6 nouveaux modèles de CV (Minimaliste, Sobre ATS, Barre latérale, Fond teinté, Souligné, Double filet)', 'Réglages > IA : le modèle utilisé est indiqué à côté de « Gratuit » (Llama 3.3 70B) et de « Claude » (Haiku)'] },
   { v: '1.9.5', d: '02/11/2026', l: ['Admin : boutons directs vers chaque page utile (crédit et consommation Claude, clés API, secrets Cloudflare, Workers)'] },
   { v: '1.9.4', d: '02/11/2026', l: ['Nouveau : onglet « Admin » dans Réglages, visible seulement avec ton mot de passe propriétaire (état du relais, liens Cloudflare et console Claude, mémo des secrets, invités)', 'Guide : fiche « Voir mon crédit Claude »'] },
   { v: '1.9.3', d: '02/11/2026', l: ['IA : choix « Gratuit / Claude » dans Réglages > IA (Claude réservé au propriétaire du relais)', 'IA : la fenêtre du texte proposé indique quelle IA l’a écrit', 'Guide : fiche « Prêter l’appli à un proche »'] },
@@ -172,9 +172,10 @@ function contacts(cv) {
 }
 const photoHtml = cv => (cv.photo !== false && cv.data.identity.photo) ? `<div class="ph" style="background-image:url('${cv.data.identity.photo}')"></div>` : '';
 
-const isMod = cv => cv.tpl === 'moderne';
+const isMod = cv => cv.tpl === 'moderne' || cv.tpl === 'coin';
 const twoCol = cv => isMod(cv) || !!cv.cols;
-const colOf = (cv, k) => twoCol(cv) ? ((cv.col && cv.col[k]) || (SIDE.includes(k) ? 'side' : 'main')) : 'main';
+const SIDE_COIN = ['resume', 'formations', 'certifs', 'competences', 'langues', 'loisirs'];
+const colOf = (cv, k) => twoCol(cv) ? ((cv.col && cv.col[k]) || ((cv.tpl === 'coin' ? SIDE_COIN : SIDE).includes(k) ? 'side' : 'main')) : 'main';
 const szOf = (cv, k) => (cv.sz && cv.sz[k]) || 1;
 
 function buildParts(cv, sc) {
@@ -185,7 +186,8 @@ function buildParts(cv, sc) {
   const nameBlock = `<h1 class="nm">${esc(i.nom || 'Prénom Nom')}</h1>${i.titre ? `<div class="ti">${esc(i.titre)}</div>` : ''}`;
   let head;
   const ctRow = `<div class="ct">${ct.map(c => `<span>${esc(c)}</span>`).join('')}</div>`;
-  if (mod) head = `<div class="blk">${nameBlock}</div>`;
+  if (mod && cv.tpl === 'coin') head = `<div class="blk">${i.titre ? `<div class="ti">${esc(i.titre)}</div>` : ''}</div>`;
+  else if (mod) head = `<div class="blk">${nameBlock}</div>`;
   else if (cv.tpl === 'bandeau') head = `<div class="blk"><div class="band">${photoHtml(cv)}<div>${nameBlock}${ctRow}</div></div></div>`;
   else if (cv.tpl === 'elegant') head = `<div class="blk"><div class="hd">${photoHtml(cv)}${nameBlock}${ctRow}</div></div>`;
   else head = `<div class="blk"><div class="hd">${photoHtml(cv)}<div>${nameBlock}${ctRow}</div></div></div>`;
@@ -209,7 +211,10 @@ function buildParts(cv, sc) {
   let sb = null;
   if (mod) {
     const cts = `<div class="blk"><div class="st">Contact</div><div class="cts">${ct.map(c => `<div>${esc(c)}</div>`).join('')}</div></div>`;
-    sb = photoHtml(cv) + (ct.length ? cts : '') + sideHtml.join('');
+    if (cv.tpl === 'coin') {
+      const ic = c => /@/.test(c) ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/></svg>' : /^[+\d(][\d\s.+()-]{6,}$/.test(c.trim()) ? '<svg viewBox="0 0 24 24"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z"/></svg>' : '<svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+      sb = photoHtml(cv) + `<h1 class="nm">${esc(i.nom || 'Prénom Nom')}</h1>` + (ct.length ? `<div class="blk"><div class="st">Contact</div><div class="cts">${ct.map(c => `<div><i class="ic">${ic(c)}</i><span>${esc(c)}</span></div>`).join('')}</div></div>` : '') + sideHtml.join('');
+    } else sb = photoHtml(cv) + (ct.length ? cts : '') + sideHtml.join('');
   } else if (cv.cols && sideHtml.length) sb = sideHtml.join('');
   return { blocks, sb };
 }
@@ -509,13 +514,14 @@ async function aiCall(task, input) {
   } catch (e) { toast('Connexion impossible : vérifie l’adresse du relais'); return null; }
   finally { ui.aiBusy = false; }
 }
-function aiSheet(title, text, apply, old) {
+function aiSheet(title, text, apply, old, kind) {
   const cmp = typeof old === 'string' && old.trim();
-  ui.aiRes = { apply };
+  ui.aiRes = { apply, kind };
   openSheet(`<div class="sh"><h2>${esc(title)}</h2><button class="ib" data-act="closesheet">✕</button></div>
    <div class="small muted">${ui.aiLast ? 'Écrit par ' + (ui.aiLast.provider === 'claude' ? 'Claude' : 'l’IA gratuite') + '. ' : ''}Relis et corrige avant d’utiliser : l’IA peut se tromper et ne connaît que ton CV.</div>
    ${cmp ? `<div class="aicmp"><div class="col"><b>Avant (ton texte actuel)</b><div class="old">${esc(old.trim())}</div></div><div class="col"><b>Proposé par l’IA (modifiable)</b><textarea id="aiTxt" rows="12">${esc(text)}</textarea></div></div>` : `<textarea id="aiTxt" rows="12">${esc(text)}</textarea>`}
-   <div class="row2">${apply ? `<button class="btn" data-act="aiuse" style="flex:1">Utiliser ce texte</button>` : ''}<button class="btn ghost" data-act="aicopy" style="flex:1">Copier</button></div>`);
+   <div class="row2">${apply ? `<button class="btn" data-act="aiuse" style="flex:1">Utiliser ce texte</button>` : ''}<button class="btn ghost" data-act="aicopy" style="flex:1">Copier</button></div>
+   ${kind ? `<button class="btn ${apply ? 'ghost' : ''}" data-act="aisavejob">💾 Enregistrer dans la candidature</button><div class="small muted">Elle sera retrouvée dans l’onglet Suivi, en ouvrant la candidature. Si elle n’existe pas encore, elle est créée.</div>` : ''}`);
   const sh = $('#sheet'); if (sh) sh.classList.toggle('wide', !!cmp);
 }
 function toast(m) {
@@ -769,10 +775,13 @@ function jobSheet(j) {
   <div class="grid2"><label class="f">Entretien : date et heure<input type="datetime-local" data-u="jd.rdv" value="${esc(j.rdv || '')}"></label><label class="f">Durée (minutes)<input type="number" inputmode="numeric" min="15" step="15" data-u="jd.rdvDur" data-num="1" value="${j.rdvDur || 60}"></label></div>
   <label class="f">Lieu ou lien visio de l’entretien<input data-u="jd.rdvLieu" value="${esc(j.rdvLieu || '')}" placeholder="Adresse, Teams, Zoom…"></label>
   <label class="f">Notes<textarea data-u="jd.notes" rows="3">${esc(j.notes)}</textarea></label>
+  <label class="f">Lettre de motivation<textarea data-u="jd.lettre" rows="6" placeholder="Colle ou écris ta lettre ici (ou génère-la depuis l’onglet Offre)">${esc(j.lettre || '')}</textarea></label>
+  <div class="row2"><button class="btn sm ghost" data-act="jobcopy" data-k="lettre" style="flex:1">Copier la lettre</button>${j.entretien ? '<button class="btn sm ghost" data-act="jobcopy" data-k="entretien" style="flex:1">Copier la préparation d’entretien</button>' : ''}</div>
+  ${j.entretien ? `<label class="f">Préparation d’entretien<textarea data-u="jd.entretien" rows="6">${esc(j.entretien)}</textarea></label>` : ''}
   ${j.offre ? `<button class="btn ghost" data-act="jobanalyze" data-id="${j.id}">Relire et analyser l’annonce</button>` : ''}
   <div class="row2"><button class="btn" data-act="savejob" style="flex:1">Enregistrer</button>${j.created ? `<button class="btn danger" data-act="deljob" data-id="${j.id}">Supprimer</button>` : ''}${j.url ? `<a class="btn ghost" href="${esc(j.url)}" target="_blank" rel="noopener" style="text-decoration:none;text-align:center">Voir l’annonce</a>` : ''}</div>`);
 }
-const newJob = () => ({ id: uid(), poste: '', entreprise: '', url: '', statut: 'aenvoyer', cvId: S.cvs[0]?.id || '', date: '', relance: '', notes: '', offre: '', created: 0, rdv: '', rdvDur: 60, rdvLieu: '' });
+const newJob = () => ({ id: uid(), poste: '', entreprise: '', url: '', statut: 'aenvoyer', cvId: S.cvs[0]?.id || '', date: '', relance: '', notes: '', offre: '', created: 0, rdv: '', rdvDur: 60, rdvLieu: '', lettre: '', entretien: '' });
 
 /* ---- onglet Guide ---- */
 function tabGuide() {
@@ -1114,7 +1123,7 @@ function autoLayout() {
   const base = clone(cv); base.order = ['resume', 'domaines', 'experiences', 'formations', 'competences', 'langues', 'certifs', 'loisirs']; base.col = {}; base.sz = {}; base.scale = 1; base.cols = false;
   const d = base.data, rich = (d.competences || []).length + (d.langues || []).length;
   const score = t => { const c = { ...clone(base), tpl: t, updated: Date.now() }, r = renderPages(c, true); return { t, r, s: (cv.one ? (r.fit ? r.sc : 0) : 1 - r.pages.length * 0.3 - (r.over ? 0.2 : 0)) + (t === 'moderne' && rich >= 8 ? 0.04 : 0) + (t === 'classique' ? 0.01 : 0) }; };
-  const pick = () => ['classique', 'moderne', 'chrono', 'bandeau', 'elegant', 'minimal', 'sobre', 'barre', 'tinte', 'souligne', 'double'].map(score).sort((a, b) => b.s - a.s)[0];
+  const pick = () => ['classique', 'moderne', 'chrono', 'bandeau', 'elegant', 'minimal', 'sobre', 'barre', 'tinte', 'souligne', 'double', 'coin'].map(score).sort((a, b) => b.s - a.s)[0];
   let best = pick; best = pick(); const hid = [];
   if (cv.one) for (const k of ['loisirs', 'certifs', 'domaines']) { if (best.r.fit) break; if (base.show[k] === false) continue; base.show[k] = false; hid.push(SHORT[k]); best = pick(); }
   Object.assign(cv, { tpl: best.t, cols: false, scale: 1, order: base.order, col: {}, sz: {}, show: base.show });
@@ -1496,6 +1505,8 @@ const ACT = {
   adapt: () => { const o = ui.offre, cv = S.cvs.find(c => c.id === o.cvId); if (!o.res) return; const c = adaptCV(cv, o.res, o); S.cvs.push(c); save(); ui.ed = c.id; ui.edTab = 'comp'; toast('Version adaptée créée'); render(); scrollTo(0, 0); },
   tojob: () => { const o = ui.offre, j = newJob(); j.poste = o.poste; j.entreprise = o.entreprise; j.cvId = o.cvId; j.offre = o.text; jobSheet(j); },
   newjob: () => jobSheet(newJob()),
+  jobcopy: (v, el) => { const t = (ui.jd || {})[el.dataset.k] || ''; if (!t.trim()) { toast('Rien à copier'); return; } navigator.clipboard?.writeText(t).then(() => toast('Texte copié'), () => toast('Copie impossible : sélectionne le texte')); },
+  aisavejob: () => { const t = (($('#aiTxt') || {}).value || '').trim(), k = ui.aiRes && ui.aiRes.kind, o = ui.offre; if (!t || !k) return; const poste = (o.poste || '').trim(), ent = (o.entreprise || '').trim(); if (!poste && !ent) { toast('Indique d’abord le poste ou l’entreprise dans l’onglet Offre'); return; } const low = x => (x || '').trim().toLowerCase(); let j = S.jobs.find(x => low(x.poste) === low(poste) && low(x.entreprise) === low(ent)), neu = !j; if (neu) { j = newJob(); j.poste = poste; j.entreprise = ent; j.cvId = o.cvId || j.cvId; j.offre = o.text; j.created = Date.now(); S.jobs.push(j); } j[k] = t; save(); closeSheet(); render(); toast((k === 'lettre' ? 'Lettre' : 'Préparation') + ' enregistrée dans la candidature « ' + (poste || ent) + ' »' + (neu ? ' (créée)' : ''), 4500); },
   editjob: (v, el) => jobSheet(S.jobs.find(j => j.id === el.dataset.id)),
   savejob: () => { const j = { ...ui.jd }; if (!j.poste.trim() && !j.entreprise.trim()) { toast('Indique au moins le poste ou l’entreprise'); return; } const n = S.jobs.findIndex(x => x.id === j.id); if (j.statut === 'envoyee' && !j.relance && j.date) { const d = new Date(j.date); d.setDate(d.getDate() + 8); j.relance = d.toISOString().slice(0, 10); } if (n >= 0) S.jobs[n] = j; else { j.created = Date.now(); S.jobs.push(j); } save(); closeSheet(); ui.tab = ui.tab === 'offre' ? 'suivi' : ui.tab; render(); },
   deljob: (v, el) => { if (!confirm('Supprimer cette candidature ?')) return; S.jobs = S.jobs.filter(j => j.id !== el.dataset.id); save(); closeSheet(); render(); },
@@ -1516,8 +1527,8 @@ const ACT = {
   aitest: async () => { const c = AI(); c.url = (ui.aiu || '').trim().replace(/\/+$/, ''); c.token = (ui.ait || '').trim(); const on = c.on; c.on = true; const r = await aiCall('ping', {}); c.on = on; if (r) { c.okAt = Date.now(); c.can = !!r.canClaude; c.role = r.role || ''; toast('Connexion OK (' + (r.provider === 'claude' ? 'Claude' : 'IA gratuite') + (r.who ? ', invité ' + r.who : '') + ')' + (r.note ? ' : ' + r.note : ''), 4500); save(); render(); } },
   aiprofil: async () => { const cv = curCV(); if (!cv) return; const r = await aiCall('profil', { titre: cv.data.identity.titre, resume: cv.data.resume, cv: cvPlain(cv) }); if (r) aiSheet('Profil proposé', r.text, t => { cv.data.resume = t; touch(cv); closeSheet(); render(); toast('Profil remplacé'); }, cv.data.resume); },
   aipuces: async (v, el) => { const cv = curCV(), e = cv && cv.data.experiences.find(x => x.id === el.dataset.i); if (!e) return; if (!(e.desc || '').trim()) { toast('Écris d’abord quelques missions, même brutes'); return; } const r = await aiCall('puces', { poste: e.poste, entreprise: e.entreprise, text: e.desc }); if (r) aiSheet('Puces proposées', r.text, t => { e.desc = t; touch(cv); closeSheet(); render(); toast('Missions remplacées'); }, e.desc); },
-  ailettre: async () => { const o = ui.offre, cv = S.cvs.find(c => c.id === o.cvId); if (!cv || !o.text.trim()) { toast('Colle d’abord l’annonce'); return; } const r = await aiCall('lettre', { poste: o.poste, entreprise: o.entreprise, annonce: o.text, cv: cvPlain(cv) }); if (r) aiSheet('Lettre de motivation', r.text, null); },
-  aientretien: async () => { const o = ui.offre, cv = S.cvs.find(c => c.id === o.cvId); if (!cv || !o.text.trim()) { toast('Colle d’abord l’annonce'); return; } const r = await aiCall('entretien', { poste: o.poste, entreprise: o.entreprise, annonce: o.text, cv: cvPlain(cv) }); if (r) aiSheet('Préparer l’entretien', r.text, null); },
+  ailettre: async () => { const o = ui.offre, cv = S.cvs.find(c => c.id === o.cvId); if (!cv || !o.text.trim()) { toast('Colle d’abord l’annonce'); return; } const r = await aiCall('lettre', { poste: o.poste, entreprise: o.entreprise, annonce: o.text, cv: cvPlain(cv) }); if (r) aiSheet('Lettre de motivation', r.text, null, null, 'lettre'); },
+  aientretien: async () => { const o = ui.offre, cv = S.cvs.find(c => c.id === o.cvId); if (!cv || !o.text.trim()) { toast('Colle d’abord l’annonce'); return; } const r = await aiCall('entretien', { poste: o.poste, entreprise: o.entreprise, annonce: o.text, cv: cvPlain(cv) }); if (r) aiSheet('Préparer l’entretien', r.text, null, null, 'entretien'); },
   aiuse: () => { const t = ($('#aiTxt') || {}).value || ''; if (ui.aiRes && ui.aiRes.apply && t.trim()) ui.aiRes.apply(t.trim()); },
   aicopy: () => { const t = ($('#aiTxt') || {}).value || ''; navigator.clipboard?.writeText(t).then(() => toast('Texte copié'), () => toast('Copie impossible : sélectionne le texte')); },
   offhelp: () => { ui.tab = 'guide'; ui.gcat = 'offre'; render(); scrollTo(0, 0); },
