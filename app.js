@@ -23,8 +23,9 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.9.6';
+const APP_VERSION = '1.9.7';
 const CHANGELOG = [
+  { v: '1.9.7', d: '03/11/2026', l: ['Correction : le texte du CV ne dépasse plus de la page avec la police Montserrat (la mise en page est recalculée quand la police est chargée)'] },
   { v: '1.9.6', d: '03/11/2026', l: ['Lettre de motivation et préparation d’entretien : bouton « Enregistrer dans la candidature » (créée si besoin) ; la lettre se retrouve, se modifie et se copie dans la fiche de la candidature (onglet Suivi)', 'Comparaison : choisis l’ordre de gauche à droite (▲ ▼ dans la liste, ◀ ▶ sur chaque colonne)', 'Zoom + et − plus progressifs (environ 12 % par appui) dans la comparaison, l’aperçu plein écran et l’aperçu de l’éditeur', 'Importer un PDF : le CV converti garde son PDF d’origine et un bouton « Comparer avec le PDF d’origine » les affiche côte à côte ; nouveau choix « Le garder tel quel » (consulter, partager, comparer avec tes autres CV, sans rien modifier) ou « Le convertir en CV modifiable »', 'Style : bouton « Avis de l’IA sur la mise en page » (conseils d’après le modèle, la longueur, les rubriques et les puces)', 'Une seule page : si le CV est trop long pour tenir, un message clair l’explique (Style et aperçu) et le texte garde une taille lisible au lieu d’être réduit en vain', 'IA : pour le profil et les puces, l’ancien texte s’affiche à côté du texte proposé pour comparer avant de remplacer (l’un sous l’autre sur un petit écran)', 'Style : 6 nouveaux modèles de CV (Minimaliste, Sobre ATS, Barre latérale, Fond teinté, Souligné, Double filet)', 'Réglages > IA : le modèle utilisé est indiqué à côté de « Gratuit » (Llama 3.3 70B) et de « Claude » (Haiku)'] },
   { v: '1.9.5', d: '02/11/2026', l: ['Admin : boutons directs vers chaque page utile (crédit et consommation Claude, clés API, secrets Cloudflare, Workers)'] },
   { v: '1.9.4', d: '02/11/2026', l: ['Nouveau : onglet « Admin » dans Réglages, visible seulement avec ton mot de passe propriétaire (état du relais, liens Cloudflare et console Claude, mémo des secrets, invités)', 'Guide : fiche « Voir mon crédit Claude »'] },
@@ -228,7 +229,7 @@ function buildPages(cv, sc, tight) {
   if (!measureEl) { measureEl = document.createElement('div'); measureEl.className = 'measure'; document.body.appendChild(measureEl); }
   measureEl.innerHTML = `<div class="${cls}" style="${style}">${sb != null ? '<aside class="sb"></aside>' : ''}<main class="mn"></main></div>`;
   const mn = measureEl.querySelector('main'), cs = getComputedStyle(mn);
-  const cap = mn.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const cap = mn.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - 6; /* marge de sécurité (polices/appareils) */
   const hs = blocks.map(h => {
     mn.insertAdjacentHTML('beforeend', h);
     const el = mn.lastElementChild, st = getComputedStyle(el);
@@ -237,7 +238,7 @@ function buildPages(cv, sc, tight) {
   let over = false;
   if (sb != null) {
     const as = measureEl.querySelector('aside'); as.innerHTML = sb;
-    const acs = getComputedStyle(as); over = as.scrollHeight > as.clientHeight + 2 && (as.scrollHeight - parseFloat(acs.paddingTop) - parseFloat(acs.paddingBottom)) > cap + 2;
+    const acs = getComputedStyle(as); over = as.scrollHeight > as.clientHeight + 2 && (as.scrollHeight - parseFloat(acs.paddingTop) - parseFloat(acs.paddingBottom)) > cap;
   }
   const groups = []; let cur = [], used = 0;
   blocks.forEach((b, n) => {
@@ -1621,3 +1622,11 @@ applySettings();
 render();
 checkUpdate(true);
 if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => { }));
+
+/* re-mesure le CV quand une police (ex. Montserrat) finit de se charger : sinon la mise en page « une seule page » est calculée avec la police de secours */
+let fontT;
+if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => {
+  clearTimeout(fontT);
+  fontT = setTimeout(() => { memo.clear(); if (ui.ed) updLive(); else render(); if ($('#prev')) drawPreview(); if ($('#cmp')) drawCmp(); }, 120);
+});
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { memo.clear(); });
