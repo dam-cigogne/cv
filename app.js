@@ -25,7 +25,7 @@ const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert
 /* ============ version et historique des mises à jour ============ */
 const APP_VERSION = '1.9.6';
 const CHANGELOG = [
-  { v: '1.9.6', d: '03/11/2026', l: ['Style : bouton « Avis de l’IA sur la mise en page » (conseils d’après le modèle, la longueur, les rubriques et les puces)', 'Une seule page : si le CV est trop long pour tenir, un message clair l’explique (Style et aperçu) et le texte garde une taille lisible au lieu d’être réduit en vain', 'IA : pour le profil et les puces, l’ancien texte s’affiche à côté du texte proposé pour comparer avant de remplacer (l’un sous l’autre sur un petit écran)', 'Style : 6 nouveaux modèles de CV (Minimaliste, Sobre ATS, Barre latérale, Fond teinté, Souligné, Double filet)', 'Réglages > IA : le modèle utilisé est indiqué à côté de « Gratuit » (Llama 3.3 70B) et de « Claude » (Haiku)'] },
+  { v: '1.9.6', d: '03/11/2026', l: ['Importer un PDF : le CV converti garde son PDF d’origine et un bouton « Comparer avec le PDF d’origine » les affiche côte à côte ; nouveau choix « Le garder tel quel » (consulter, partager, comparer avec tes autres CV, sans rien modifier) ou « Le convertir en CV modifiable »', 'Style : bouton « Avis de l’IA sur la mise en page » (conseils d’après le modèle, la longueur, les rubriques et les puces)', 'Une seule page : si le CV est trop long pour tenir, un message clair l’explique (Style et aperçu) et le texte garde une taille lisible au lieu d’être réduit en vain', 'IA : pour le profil et les puces, l’ancien texte s’affiche à côté du texte proposé pour comparer avant de remplacer (l’un sous l’autre sur un petit écran)', 'Style : 6 nouveaux modèles de CV (Minimaliste, Sobre ATS, Barre latérale, Fond teinté, Souligné, Double filet)', 'Réglages > IA : le modèle utilisé est indiqué à côté de « Gratuit » (Llama 3.3 70B) et de « Claude » (Haiku)'] },
   { v: '1.9.5', d: '02/11/2026', l: ['Admin : boutons directs vers chaque page utile (crédit et consommation Claude, clés API, secrets Cloudflare, Workers)'] },
   { v: '1.9.4', d: '02/11/2026', l: ['Nouveau : onglet « Admin » dans Réglages, visible seulement avec ton mot de passe propriétaire (état du relais, liens Cloudflare et console Claude, mémo des secrets, invités)', 'Guide : fiche « Voir mon crédit Claude »'] },
   { v: '1.9.3', d: '02/11/2026', l: ['IA : choix « Gratuit / Claude » dans Réglages > IA (Claude réservé au propriétaire du relais)', 'IA : la fenêtre du texte proposé indique quelle IA l’a écrit', 'Guide : fiche « Prêter l’appli à un proche »'] },
@@ -384,6 +384,7 @@ const GUIDE = [
   { c: 'appli', t: 'Sauvegarder tes données', p: 'Tout est enregistré sur ton appareil. Si tu effaces les données du navigateur ou de l’appli, ou si tu changes de téléphone, tout disparaît : sauvegarde régulièrement.', l: ['Réglages > Données > « Exporter mes données » : crée un fichier de sauvegarde (CV, suivi, réglages)', 'Garde-le dans Fichiers, un cloud ou un mail envoyé à toi-même', '« Importer un fichier » restaure la sauvegarde sur le même appareil ou un nouveau', 'À faire avant : un changement de téléphone, un nettoyage du navigateur, la réinstallation de l’appli'] },
   { c: 'appli', t: 'Mode démo', l: ['Réglages > Données > « Lancer la démo » : un faux CV, de vraies annonces et un suivi pour essayer toutes les fonctions', 'Tes vrais CV sont mis de côté et reviennent intacts quand tu quittes la démo', 'Bouton « Quitter la démo » dans la bannière orange en haut'] },
   { c: 'appli', t: 'Mises à jour et dépannage', l: ['L’appli cherche les mises à jour toute seule. « Mettre à jour maintenant » recharge la dernière version', 'Si une nouveauté n’apparaît pas : ferme complètement l’appli (retire-la des applis récentes) puis rouvre-la', 'Si une recherche d’offres ou l’IA ne marche pas : vérifie ta connexion Internet', 'Texte coupé ou onglets mal placés sur ton écran : prends une capture et signale-la', 'Confidentialité : sans l’IA activée, rien n’est envoyé nulle part. Les recherches d’offres ouvrent seulement un site avec ta recherche'] },
+  { c: 'appli', t: 'Garder ton CV PDF tel quel et le comparer', p: 'Tu peux garder ton CV d’origine sans rien changer, pour le consulter, le partager et le comparer à tes versions.', l: ['Mes CV > Importer un PDF > « Le garder tel quel »', 'Il apparaît dans « PDF d’origine » : Voir, Partager / télécharger, ⋯ (renommer, convertir en CV modifiable, supprimer)', 'Mes CV > Comparer des CV côte à côte : coche 2 ou 3 éléments (PDF et CV) pour les voir sur le même écran, ton original à gauche et tes versions à côté', 'Le fichier reste sur ton appareil. Les sauvegardes (Réglages > Données) ne contiennent pas les PDF : garde l’original de ton côté'] },
   { c: 'ia', t: 'À quoi sert l’IA', p: 'L’aide IA est facultative. Elle écrit à ta place une première version, que tu relis et corriges. Sans elle, l’appli compare des mots-clés ; avec elle, elle rédige aussi.', l: ['Profil : 2 à 3 lignes d’après ton titre et tes expériences', 'Puces d’expérience : tes missions en vrac deviennent des phrases avec un verbe d’action et un résultat', 'Lettre de motivation : une première version d’environ 220 mots, d’après l’annonce et ton CV', 'Préparation d’entretien : 8 questions probables avec une piste de réponse tirée de ton CV', 'Gain surtout quand tu candidates à plusieurs offres : un texte adapté à chaque annonce en 2 minutes'] },
   { c: 'ia', t: 'Activer l’IA (une seule fois)', l: ['Réglages > IA', 'Adresse du relais : déjà remplie (https://cv-ia.dam-cigogne.workers.dev)', 'Mot de passe du relais : celui du secret APP_TOKEN créé sur Cloudflare. Note-le dans ton gestionnaire de mots de passe', 'Touche « Enregistrer », puis « Tester » : « Connexion OK » doit s’afficher', 'Touche « IA désactivée : touche pour activer » : les boutons ✨ apparaissent dans l’appli'] },
   { c: 'ia', t: 'Écrire ou améliorer le profil', l: ['Mes CV > ouvre un CV > Infos > carte Profil', 'Touche « ✨ Écrire ou améliorer avec l’IA »', 'Relis le texte proposé et modifie-le au besoin', '« Utiliser ce texte » remplace ton profil ; « Copier » le garde ailleurs', 'Plus ton CV est rempli (titre, expériences), meilleur est le résultat'] },
@@ -535,7 +536,8 @@ function tabCV() {
   <div class="top"><span class="app">CV en poche</span><span class="chip">${S.jobs.length} candidature${S.jobs.length > 1 ? 's' : ''}</span></div>
   <section class="card hero"><div class="lbl">Mes CV</div><div class="big">${n}</div>
     <div class="sub">${n ? 'Touche un CV pour le modifier, ou importe-en un nouveau.' : 'Importe ton CV actuel en PDF : chaque rubrique devient modifiable.'}</div>
-    <div class="row2"><button class="btn solid" data-act="importpdf">Importer un PDF</button><button class="btn" data-act="newcv">Nouveau CV</button></div>${n > 1 ? '<button class="btn ghost sm" data-act="cmpopen" style="margin-top:10px">Comparer des CV côte à côte</button>' : ''}${S.demo ? '' : '<button class="btn ghost sm" data-act="demo" style="margin-top:10px">Essayer le mode démo</button>'}</section>
+    <div class="row2"><button class="btn solid" data-act="importpdf">Importer un PDF</button><button class="btn" data-act="newcv">Nouveau CV</button></div>${n + PDFS().length > 1 ? '<button class="btn ghost sm" data-act="cmpopen" style="margin-top:10px">Comparer des CV côte à côte</button>' : ''}${S.demo ? '' : '<button class="btn ghost sm" data-act="demo" style="margin-top:10px">Essayer le mode démo</button>'}</section>
+  ${PDFS().length ? `<div class="lbl" style="margin:6px 4px 0">PDF d’origine (gardés tels quels)</div>${PDFS().slice().sort((a, b) => b.added - a.added).map(pdfCard).join('')}<div class="lbl" style="margin:6px 4px 0">CV modifiables</div>` : ''}
   ${n ? S.cvs.slice().sort((a, b) => b.updated - a.updated).map(cvCard).join('') : `<div class="card empty"><b>Rien pour l’instant</b><div class="small">Tes CV restent sur ton téléphone : pas de compte, pas de pub, pas d’envoi.</div></div>`}
   </div>`;
 }
@@ -545,7 +547,58 @@ function cvCard(cv) {
    <div class="info"><div class="nm">${esc(cv.name)}</div>
    <div class="small muted">${esc(cv.data.identity.nom || 'Sans nom')} · ${pg} page${pg > 1 ? 's' : ''} · ${fmtDate(cv.updated)}</div>
    <div class="chips"><span class="chip">${esc((TPLS.find(t => t[0] === cv.tpl) || [])[1] || '')}</span>${cv.review ? '<span class="chip warn">À vérifier</span>' : ''}</div>
-   <div class="acts"><button class="btn sm" data-act="edit" data-id="${cv.id}">Modifier</button><button class="btn sm ghost" data-act="prev" data-id="${cv.id}">Aperçu / PDF</button><button class="ib sm" data-act="cvmenu" data-id="${cv.id}" aria-label="Plus">⋯</button></div></div></div>`;
+   <div class="acts"><button class="btn sm" data-act="edit" data-id="${cv.id}">Modifier</button><button class="btn sm ghost" data-act="prev" data-id="${cv.id}">Aperçu / PDF</button><button class="ib sm" data-act="cvmenu" data-id="${cv.id}" aria-label="Plus">⋯</button></div>${cv.srcPdf && PDFS().some(e => e.id === cv.srcPdf) ? `<button class="btn sm ghost" data-act="cmpsrc" data-id="${cv.id}" style="margin-top:6px">Comparer avec le PDF d’origine</button>` : ''}</div></div>`;
+}
+
+
+/* ---- PDF d'origine, gardé tel quel (fichier dans IndexedDB, fiche dans S.pdfs) ---- */
+const PDFS = () => S.pdfs || (S.pdfs = []);
+const idb = () => new Promise((ok, ko) => { const r = indexedDB.open('cvpoche-pdf', 1); r.onupgradeneeded = () => r.result.createObjectStore('f'); r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); });
+const idbDo = async (mode, fn) => { const db = await idb(); return new Promise((ok, ko) => { const tx = db.transaction('f', mode), rq = fn(tx.objectStore('f')); tx.oncomplete = () => ok(rq && rq.result); tx.onerror = () => ko(tx.error); }); };
+const pdfPut = (id, buf) => idbDo('readwrite', st => st.put(buf, id));
+const pdfGet = id => idbDo('readonly', st => st.get(id));
+const pdfDel = id => idbDo('readwrite', st => st.delete(id));
+const pdfCache = new Map();
+async function pdfLib() { const pdfjs = await import('./pdf.min.mjs'); pdfjs.GlobalWorkerOptions.workerSrc = new URL('./pdf.worker.min.mjs', import.meta.url).href; return pdfjs; }
+async function pdfRender(id, wpx, max) {
+  const key = id + ':' + wpx + ':' + (max || 0); if (pdfCache.has(key)) return pdfCache.get(key);
+  const buf = await pdfGet(id); if (!buf) throw new Error('absent');
+  const pdfjs = await pdfLib(), doc = await pdfjs.getDocument({ data: new Uint8Array(buf.slice(0)) }).promise, out = [];
+  for (let n = 1; n <= Math.min(doc.numPages, max || 12); n++) {
+    const pg = await doc.getPage(n), v0 = pg.getViewport({ scale: 1 }), vp = pg.getViewport({ scale: wpx / v0.width });
+    const c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+    await pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+    out.push({ src: c.toDataURL('image/jpeg', .85), r: c.height / c.width });
+  }
+  out.total = doc.numPages; pdfCache.set(key, out); return out;
+}
+async function pdfAdd(file, quiet) {
+  if (S.demo) { if (!quiet) toast('Indisponible en mode démo'); return null; }
+  if (!quiet) toast('Enregistrement du PDF…');
+  try {
+    const buf = await file.arrayBuffer(), id = uid();
+    await pdfPut(id, buf);
+    const big = await pdfRender(id, 1100), th = await pdfRender(id, 170, 1);
+    PDFS().push({ id, name: file.name.replace(/\.pdf$/i, ''), file: file.name, size: buf.byteLength, pages: big.total, added: Date.now(), thumb: th[0].src });
+    saveNow(); if (!quiet) { render(); toast('PDF enregistré tel quel'); } return id;
+  } catch (e) { console.error(e); if (!quiet) toast('Impossible d’enregistrer ce PDF'); return null; }
+}
+function pdfCard(e) {
+  return `<div class="card cvcard"><img src="${e.thumb}" alt="" style="width:84px;height:auto;border-radius:6px;border:1px solid var(--line);align-self:flex-start">
+   <div class="info"><div class="nm">${esc(e.name)}</div>
+   <div class="small muted">${e.pages} page${e.pages > 1 ? 's' : ''} · ${fmtDate(e.added)} · ${Math.max(1, Math.round(e.size / 1024))} Ko</div>
+   <div class="chips"><span class="chip">PDF d’origine</span></div>
+   <div class="acts"><button class="btn sm" data-act="pdfview" data-id="${e.id}">Voir</button><button class="btn sm ghost" data-act="pdfdl" data-id="${e.id}">Partager / télécharger</button><button class="ib sm" data-act="pdfmenu" data-id="${e.id}" aria-label="Plus">⋯</button></div></div></div>`;
+}
+async function pdfFileOf(id) { const e = PDFS().find(x => x.id === id), buf = await pdfGet(id); if (!e || !buf) { toast('Fichier absent : réimporte ce PDF (les sauvegardes ne contiennent pas les PDF)'); return null; } return new File([buf], e.file || e.name + '.pdf', { type: 'application/pdf' }); }
+function pdfAsk(file) {
+  ui.pdfFile = file;
+  openSheet(`<div class="sh"><h2>Que faire de ce PDF ?</h2><button class="ib" data-act="closesheet">✕</button></div>
+   <div class="small muted">${esc(file.name)}</div>
+   <button class="btn" data-act="pdfkeep">📄 Le garder tel quel</button>
+   <div class="small muted" style="margin:-4px 0 4px">Ton CV reste exactement comme il est. Tu le consultes, tu le partages et tu le compares avec tes autres CV. Rien n’est modifié.</div>
+   <button class="btn ghost" data-act="pdfconv0">✏️ Le convertir en CV modifiable</button>
+   <div class="small muted" style="margin:-4px 0 0">Lecture automatique : chaque rubrique devient modifiable. L’original est gardé aussi, pour comparer avec « Comparer avec le PDF d’origine ».</div>`);
 }
 
 /* ---- éditeur ---- */
@@ -799,22 +852,33 @@ function tabRegl() {
 }
 
 /* ============ comparaison côte à côte ============ */
+function cmpItems() { return (ui.cmpShow || ui.cmpSel || []).map(id => { const c = S.cvs.find(x => x.id === id); if (c) return { k: 'cv', id, name: c.name, cv: c }; const e = PDFS().find(x => x.id === id); return e ? { k: 'pdf', id, name: e.name, p: e } : null; }).filter(Boolean); }
 function cmpSheet() {
-  const sel = ui.cmpSel || (ui.cmpSel = S.cvs.slice().sort((x, y) => y.updated - x.updated).slice(0, 2).map(c => c.id));
-  ui.cmpSel = sel.filter(id => S.cvs.some(c => c.id === id));
+  const all = [...S.cvs.slice().sort((x, y) => y.updated - x.updated).map(c => ({ id: c.id, name: c.name, tag: '' })), ...PDFS().map(e => ({ id: e.id, name: e.name, tag: ' <span class="chip">PDF</span>' }))];
+  if (!ui.cmpSel) ui.cmpSel = all.slice(0, 2).map(c => c.id);
+  ui.cmpSel = ui.cmpSel.filter(id => all.some(c => c.id === id));
   openSheet(`<div class="sh"><h2>Comparer des CV</h2><button class="ib" data-act="closesheet">✕</button></div>
-   <div class="small muted">Choisis 2 ou 3 CV : ils s’affichent côte à côte, avec leur nombre de pages et leur note. Pince ou utilise + et − pour zoomer.</div>
-   <div>${S.cvs.map(c => `<div class="skill"><button class="ib sm" data-act="cmptoggle" data-id="${c.id}" aria-label="Choisir">${ui.cmpSel.includes(c.id) ? '☑' : '☐'}</button><span style="flex:1"><b>${esc(c.name)}</b></span></div>`).join('')}</div>
+   <div class="small muted">Choisis 2 ou 3 éléments (tes CV et tes PDF d’origine) : ils s’affichent côte à côte. Mets ton CV d’origine à gauche et tes versions modifiées à côté. Pince ou utilise + et − pour zoomer.</div>
+   <div>${all.map(c => `<div class="skill"><button class="ib sm" data-act="cmptoggle" data-id="${c.id}" aria-label="Choisir">${ui.cmpSel.includes(c.id) ? '☑' : '☐'}</button><span style="flex:1"><b>${esc(c.name)}</b>${c.tag}</span></div>`).join('')}</div>
    <button class="btn" data-act="cmpgo" ${ui.cmpSel.length < 2 ? 'disabled' : ''}>Comparer (${ui.cmpSel.length})</button>`);
 }
 function drawCmp() {
-  const cvs = (ui.cmpSel || []).map(id => S.cvs.find(c => c.id === id)).filter(Boolean); if (cvs.length < 2) return;
-  const n = cvs.length, base = (innerWidth - 8 * (n + 1)) / n, w = Math.max(90, base * ui.cmpZoom), k = w / PAGE_W, h = w * 297 / 210;
+  const its = cmpItems(); if (!its.length) return;
+  const n = its.length, base = (innerWidth - 8 * (n + 1)) / n, w = Math.max(90, base * ui.cmpZoom), k = w / PAGE_W, h = w * 297 / 210;
   let el = $('#cmp'); if (!el) { el = document.createElement('div'); el.id = 'cmp'; document.body.appendChild(el); }
   const sc = el.querySelector('.scroll'), st = sc ? [sc.scrollTop, sc.scrollLeft] : [0, 0];
-  el.innerHTML = `<div class="bar"><button class="btn sm ghost" data-act="closecmp">✕ Fermer</button><span class="small muted">${n} CV</span><div class="row2"><button class="ib sm" data-act="cmpzoom" data-d="-1" aria-label="Zoom −">−</button><button class="ib sm" data-act="cmpzoom" data-d="1" aria-label="Zoom +">+</button></div></div>
-   <div class="scroll"><div class="cols">${cvs.map(cv => { const { pages } = renderPages(cv), q = qualityChecks(cv).score; return `<div class="col" style="width:${w}px"><div class="ch"><b>${esc(cv.name)}</b><span>${pages.length} page${pages.length > 1 ? 's' : ''} · note ${q}</span></div>${pages.map(p => `<div class="pgbox" style="width:${w}px;height:${h}px"><div class="pg-in" style="transform:scale(${k});transform-origin:0 0;width:${PAGE_W}px">${p}</div></div>`).join('')}</div>`; }).join('')}</div></div>`;
+  const col = it => {
+    if (it.k === 'pdf') {
+      const c = pdfCache.get(it.id + ':1100:0');
+      return `<div class="col" style="width:${w}px"><div class="ch"><b>${esc(it.name)}</b><span>PDF d’origine · ${it.p.pages} page${it.p.pages > 1 ? 's' : ''}</span></div>${c ? c.map(g => `<div class="pgbox" style="width:${w}px"><img src="${g.src}" alt="" style="display:block;width:100%;height:auto;background:#fff"></div>`).join('') : `<div class="pgbox" style="width:${w}px;height:${h}px;background:#fff;color:#555;display:flex;align-items:center;justify-content:center;font-size:13px">Chargement…</div>`}</div>`;
+    }
+    const { pages } = renderPages(it.cv), q = qualityChecks(it.cv).score;
+    return `<div class="col" style="width:${w}px"><div class="ch"><b>${esc(it.name)}</b><span>${pages.length} page${pages.length > 1 ? 's' : ''} · note ${q}</span></div>${pages.map(p => `<div class="pgbox" style="width:${w}px;height:${h}px"><div class="pg-in" style="transform:scale(${k});transform-origin:0 0;width:${PAGE_W}px">${p}</div></div>`).join('')}</div>`;
+  };
+  el.innerHTML = `<div class="bar"><button class="btn sm ghost" data-act="closecmp">✕ Fermer</button><span class="small muted">${n === 1 ? esc(its[0].name) : n + ' CV'}</span><div class="row2">${n === 1 && its[0].k === 'pdf' ? `<button class="btn sm ghost" data-act="pdfdl" data-id="${its[0].id}">Partager</button>` : ''}<button class="ib sm" data-act="cmpzoom" data-d="-1" aria-label="Zoom −">−</button><button class="ib sm" data-act="cmpzoom" data-d="1" aria-label="Zoom +">+</button></div></div>
+   <div class="scroll"><div class="cols">${its.map(col).join('')}</div></div>`;
   const s2 = el.querySelector('.scroll'); s2.scrollTop = st[0]; s2.scrollLeft = st[1];
+  its.filter(x => x.k === 'pdf' && !pdfCache.has(x.id + ':1100:0')).forEach(x => pdfRender(x.id, 1100).then(() => { if ($('#cmp')) drawCmp(); }, () => { toast('Fichier absent : réimporte ce PDF'); }));
 }
 
 /* ============ aperçu / impression ============ */
@@ -870,7 +934,7 @@ function showImport() {
   <label class="f">Nom du CV<input data-u="imp.name" value="${esc(name)}"></label>
   <button class="btn" data-act="doimport">Créer le CV et vérifier</button>`);
 }
-function doImport() {
+async function doImport() {
   const { r, name } = ui.imp, d = r.data;
   const cv = newCV(name || 'CV importé', {
     identity: d.identity, resume: d.resume, domaines: d.domaines || '', loisirs: d.loisirs, extra: d.extra,
@@ -878,6 +942,8 @@ function doImport() {
     competences: d.competences.map(e => ({ id: uid(), on: true, ...e })), langues: d.langues.map(e => ({ id: uid(), on: true, ...e })), certifs: d.certifs.map(e => ({ id: uid(), on: true, ...e })),
   });
   cv.review = true; cv.source = ui.imp.file;
+  const src = ui.impSrc; ui.impSrc = null;
+  if (src && src.id) cv.srcPdf = src.id; else if (src && src.file) { const id = await pdfAdd(src.file, true); if (id) cv.srcPdf = id; }
   S.cvs.push(cv); save(); closeSheet(); ui.imp = null; ui.ed = cv.id; ui.edTab = 'infos'; render(); scrollTo(0, 0);
 }
 
@@ -1353,7 +1419,7 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('change', e => {
   const el = e.target;
-  if (el.id === 'fPdf' && el.files[0]) { importPdf(el.files[0]); el.value = ''; return; }
+  if (el.id === 'fPdf' && el.files[0]) { pdfAsk(el.files[0]); el.value = ''; return; }
   if (el.id === 'fPhoto' && el.files[0]) { readPhoto(el.files[0]); el.value = ''; return; }
   if (el.id === 'fJson' && el.files[0]) { importJson(el.files[0]); el.value = ''; return; }
   if (el.dataset.r) render();
@@ -1375,9 +1441,21 @@ const ACT = {
   dismiss: () => { const cv = curCV(); delete cv.review; touch(cv); render(); },
   prev: (v, el) => { const id = el.dataset.id; openPreview(S.cvs.find(c => c.id === id)); },
   cmpopen: () => cmpSheet(),
+  cmpsrc: (v, el) => { const cv = S.cvs.find(c => c.id === el.dataset.id); if (!cv || !cv.srcPdf) return; ui.cmpShow = [cv.srcPdf, cv.id]; ui.cmpZoom = 1; drawCmp(); },
+  pdfkeep: () => { const f = ui.pdfFile; closeSheet(); if (f) pdfAdd(f); },
+  pdfconv0: () => { const f = ui.pdfFile; closeSheet(); if (f) { ui.impSrc = { file: f }; importPdf(f); } },
+  pdfview: (v, el) => { ui.cmpShow = [el.dataset.id]; ui.cmpZoom = 1; drawCmp(); },
+  pdfdl: async (v, el) => { const f = await pdfFileOf(el.dataset.id); if (!f) return; try { if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: f.name }); return; } } catch (e) { if (e && e.name === 'AbortError') return; } const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); },
+  pdfmenu: (v, el) => { const e = PDFS().find(x => x.id === el.dataset.id); if (!e) return; ui.pdfn = e.name; openSheet(`<div class="sh"><h2>${esc(e.name)}</h2><button class="ib" data-act="closesheet">✕</button></div>
+   <label class="f">Nom<input data-u="pdfn" value="${esc(e.name)}"></label><button class="btn" data-act="pdfrename" data-id="${e.id}">Renommer</button>
+   <button class="btn ghost" data-act="pdfconv" data-id="${e.id}">✏️ Le convertir en CV modifiable</button>
+   <button class="btn danger" data-act="pdfdelete" data-id="${e.id}">Supprimer ce PDF</button>`); },
+  pdfrename: (v, el) => { const e = PDFS().find(x => x.id === el.dataset.id); if (e && (ui.pdfn || '').trim()) { e.name = ui.pdfn.trim(); save(); } closeSheet(); render(); },
+  pdfconv: async (v, el) => { const f = await pdfFileOf(el.dataset.id); closeSheet(); if (f) { ui.impSrc = { id: el.dataset.id }; importPdf(f); } },
+  pdfdelete: async (v, el) => { const id = el.dataset.id; try { await pdfDel(id); } catch (e) { } S.pdfs = PDFS().filter(x => x.id !== id); ui.cmpSel = (ui.cmpSel || []).filter(x => x !== id); saveNow(); closeSheet(); render(); toast('PDF supprimé'); },
   cmptoggle: (v, el) => { const id = el.dataset.id, s = ui.cmpSel || (ui.cmpSel = []); const i = s.indexOf(id); if (i >= 0) s.splice(i, 1); else if (s.length >= 3) { toast('3 CV maximum'); return; } else s.push(id); cmpSheet(); },
-  cmpgo: () => { if ((ui.cmpSel || []).length < 2) { toast('Choisis au moins 2 CV'); return; } closeSheet(); ui.cmpZoom = 1; drawCmp(); },
-  closecmp: () => { $('#cmp')?.remove(); },
+  cmpgo: () => { if ((ui.cmpSel || []).length < 2) { toast('Choisis au moins 2 CV'); return; } closeSheet(); ui.cmpShow = null; ui.cmpZoom = 1; drawCmp(); },
+  closecmp: () => { ui.cmpShow = null; $('#cmp')?.remove(); },
   cmpzoom: (v, el) => { ui.cmpZoom = Math.max(.6, Math.min(3, (ui.cmpZoom || 1) + (+el.dataset.d) * .4)); drawCmp(); },
   closeprev: () => { $('#prev')?.remove(); ui.prevId = null; },
   prevzoom: (v, el) => { ui.prevZoom = Math.max(.6, Math.min(2.2, ui.prevZoom + (+el.dataset.d) * .3)); drawPreview(); },
