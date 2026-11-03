@@ -346,3 +346,46 @@ body.filt-side .vt .vl{line-height:1.2}
 #cmp .ch span{color:var(--muted);font-size:11px}
 #cmp .pgbox{margin:0 0 8px;position:relative;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.45)}
 body.demo #cmp{top:calc(30px + env(safe-area-inset-top,0px))}
+
+#sheet.wide{max-width:960px}
+.aicmp{display:grid;grid-template-columns:1fr;gap:10px}
+.aicmp .col{display:flex;flex-direction:column;gap:4px;min-width:0}
+.aicmp .col b{font-size:13px}
+.aicmp .old{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 12px;white-space:pre-wrap;line-height:1.4;font-size:15px;max-height:38vh;overflow:auto;color:var(--ink);opacity:.85}
+.aicmp textarea{min-height:140px}
+@media(min-width:640px){.aicmp{grid-template-columns:1fr 1fr}.aicmp .old{height:46vh;max-height:none}.aicmp textarea{height:46vh}}
+
+/* nouveaux modèles */
+.pg.t-minimal .hd,.pg.t-sobre .hd,.pg.t-barre .hd,.pg.t-tinte .hd,.pg.t-souligne .hd,.pg.t-double .hd{display:flex;gap:6mm;align-items:center}
+.pg.t-minimal .hd .ph,.pg.t-sobre .hd .ph,.pg.t-barre .hd .ph,.pg.t-tinte .hd .ph,.pg.t-souligne .hd .ph,.pg.t-double .hd .ph{width:27mm;height:27mm;background:#ddd center/cover;flex:none}
+/* minimaliste : fin, aéré, une seule touche de couleur */
+.pg.t-minimal .hd{padding-bottom:4mm;margin-bottom:2mm}
+.pg.t-minimal .hd .ph{border-radius:50%}
+.pg.t-minimal .nm{font-weight:300;letter-spacing:.03em}
+.pg.t-minimal .ti{color:var(--a)}
+.pg.t-minimal .st{border-bottom:0;color:#6b7386;font-weight:600;letter-spacing:.22em;font-size:calc(9.4pt*var(--s,1));padding-bottom:0;margin-top:3mm}
+/* sobre ATS : noir et blanc, sans photo, lisible par les logiciels de tri */
+.pg.t-sobre .hd .ph{display:none}
+.pg.t-sobre .hd{border-bottom:.4mm solid #111;padding-bottom:3mm;margin-bottom:1mm}
+.pg.t-sobre .nm,.pg.t-sobre .ti{color:#111}
+.pg.t-sobre .st{color:#111;border-bottom:.3mm solid #111}
+/* barre latérale : titres avec barre de couleur à gauche */
+.pg.t-barre .hd{border-bottom:.3mm solid #cfd4e0;padding-bottom:4mm;margin-bottom:1mm}
+.pg.t-barre .hd .ph{border-radius:2mm}
+.pg.t-barre .st{border-bottom:0;border-left:1.6mm solid var(--a);padding:.6mm 0 .6mm 2.6mm;color:#1d2233}
+/* fond teinté : en-tête sur fond clair de la couleur choisie */
+.pg.t-tinte .hd{margin:-13mm -15mm 4mm;padding:11mm 15mm 6mm;background:color-mix(in srgb,var(--a) 11%,#fff)}
+.pg.t-tinte .hd .ph{border-radius:50%}
+.pg.t-tinte .nm{color:var(--a)}
+.pg.t-tinte .st{border-bottom:.3mm solid color-mix(in srgb,var(--a) 45%,#fff)}
+/* souligné : titre coloré avec court trait d'accent */
+.pg.t-souligne .hd{padding-bottom:3mm}
+.pg.t-souligne .hd .ph{border-radius:2mm}
+.pg.t-souligne .nm{color:var(--a)}
+.pg.t-souligne .st{border-bottom:0;position:relative;padding-bottom:2mm;text-transform:none;letter-spacing:.01em;font-size:calc(12.4pt*var(--s,1))}
+.pg.t-souligne .st::after{content:"";position:absolute;left:0;bottom:0;width:16mm;height:.9mm;background:var(--a)}
+/* double filet : nom en capitales entre deux filets */
+.pg.t-double .hd{border-top:.9mm solid var(--a);border-bottom:.3mm solid var(--a);padding:4mm 0;margin-bottom:2mm}
+.pg.t-double .hd .ph{border-radius:50%}
+.pg.t-double .nm{text-transform:uppercase;letter-spacing:.08em}
+.pg.t-double .st{border-bottom:.3mm solid #b9bfce;color:#1d2233}

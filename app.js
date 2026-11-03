@@ -14,7 +14,7 @@ function setPath(o, path, v) {
   c[k[k.length - 1]] = v;
 }
 
-const TPLS = [['classique', 'Classique'], ['moderne', 'Moderne'], ['bandeau', 'Bandeau'], ['chrono', 'Chronologie'], ['elegant', 'Élégant']];
+const TPLS = [['classique', 'Classique'], ['moderne', 'Moderne'], ['bandeau', 'Bandeau'], ['chrono', 'Chronologie'], ['elegant', 'Élégant'], ['minimal', 'Minimaliste'], ['sobre', 'Sobre (ATS)'], ['barre', 'Barre latérale'], ['tinte', 'Fond teinté'], ['souligne', 'Souligné'], ['double', 'Double filet']];
 const ACCENTS = ['#1F5BD8', '#0E6B5C', '#7A3FB5', '#C2410C', '#B3372B', '#222B45', '#0F7C9D', '#8A6A12', '#2563EB', '#0891B2', '#059669', '#65A30D', '#CA8A04', '#EA580C', '#DC2626', '#DB2777', '#9333EA', '#4F46E5', '#475569', '#111111'];
 const SHORT = { resume: 'Profil', domaines: 'Domaines', experiences: 'Expériences', formations: 'Formations', competences: 'Compétences', langues: 'Langues', certifs: 'Certifications', loisirs: 'Loisirs' };
 const SECS = { resume: 'Profil', domaines: 'Domaines de compétences', experiences: 'Expériences professionnelles', formations: 'Formation', competences: 'Compétences', langues: 'Langues', certifs: 'Certifications', loisirs: 'Centres d’intérêt' };
@@ -23,8 +23,9 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.9.5';
+const APP_VERSION = '1.9.6';
 const CHANGELOG = [
+  { v: '1.9.6', d: '03/11/2026', l: ['Style : bouton « Avis de l’IA sur la mise en page » (conseils d’après le modèle, la longueur, les rubriques et les puces)', 'Une seule page : si le CV est trop long pour tenir, un message clair l’explique (Style et aperçu) et le texte garde une taille lisible au lieu d’être réduit en vain', 'IA : pour le profil et les puces, l’ancien texte s’affiche à côté du texte proposé pour comparer avant de remplacer (l’un sous l’autre sur un petit écran)', 'Style : 6 nouveaux modèles de CV (Minimaliste, Sobre ATS, Barre latérale, Fond teinté, Souligné, Double filet)', 'Réglages > IA : le modèle utilisé est indiqué à côté de « Gratuit » (Llama 3.3 70B) et de « Claude » (Haiku)'] },
   { v: '1.9.5', d: '02/11/2026', l: ['Admin : boutons directs vers chaque page utile (crédit et consommation Claude, clés API, secrets Cloudflare, Workers)'] },
   { v: '1.9.4', d: '02/11/2026', l: ['Nouveau : onglet « Admin » dans Réglages, visible seulement avec ton mot de passe propriétaire (état du relais, liens Cloudflare et console Claude, mémo des secrets, invités)', 'Guide : fiche « Voir mon crédit Claude »'] },
   { v: '1.9.3', d: '02/11/2026', l: ['IA : choix « Gratuit / Claude » dans Réglages > IA (Claude réservé au propriétaire du relais)', 'IA : la fenêtre du texte proposé indique quelle IA l’a écrit', 'Guide : fiche « Prêter l’appli à un proche »'] },
@@ -258,6 +259,7 @@ function renderPages(cv, nocache) {
       res.fit = res.pages.length === 1 && !res.over;
       if (res.fit) break;
     }
+    if (!res.fit) res = { ...buildPages(cv, base, false), sc: base, tight: false, fit: false };
   }
   if (!nocache) { memo.set(key, res); if (memo.size > 40) memo.delete(memo.keys().next().value); }
   return res;
@@ -479,6 +481,19 @@ function cvPlain(cv) {
   const l = act(d.langues).map(x => x.nom).filter(Boolean); if (l.length) L.push('Langues : ' + l.join(', '));
   return L.join('\n').slice(0, 5500);
 }
+function layoutDesc(cv) {
+  const d = cv.data, r = renderPages(cv), L = [];
+  const tn = (TPLS.find(x => x[0] === cv.tpl) || [0, cv.tpl])[1];
+  L.push(`Modèle : ${tn}${cv.cols || cv.tpl === 'moderne' ? ' (avec colonne latérale)' : ' (une colonne)'}. Police : ${cv.font === 'serif' ? 'avec empattement' : 'sans empattement'}. Couleur d’accent : ${cv.accent}. Photo : ${cv.photo !== false && d.identity.photo ? 'oui' : 'non'}.`);
+  L.push(`Longueur : ${r.pages.length} page${r.pages.length > 1 ? 's' : ''}${cv.one ? (r.fit ? ', réglage « une seule page » activé et respecté (texte à ' + Math.round(r.sc * 100) + ' % de la taille normale)' : ', réglage « une seule page » activé mais le CV est trop long pour tenir') : ''}. Taille du texte : ${Math.round((cv.scale || 1) * 100)} %.`);
+  L.push('Rubriques affichées, dans l’ordre : ' + cv.order.filter(k => cv.show[k] !== false).map(k => SECS[k]).join(', ') + '.');
+  const hid = cv.order.filter(k => cv.show[k] === false).map(k => SECS[k]); if (hid.length) L.push('Rubriques masquées : ' + hid.join(', ') + '.');
+  const ex = act(d.experiences || []), w = t => String(t || '').split(/\s+/).filter(Boolean).length;
+  const bl = ex.map(e => String(e.desc || '').split('\n').filter(x => x.trim()).length);
+  L.push(`Expériences : ${ex.length}, avec ${bl.join(', ') || '0'} puces chacune (mots par puce en moyenne : ${bl.reduce((a, b) => a + b, 0) ? Math.round(ex.reduce((a, e) => a + w(e.desc), 0) / bl.reduce((a, b) => a + b, 0)) : 0}).`);
+  L.push(`Profil : ${w(d.resume)} mots. Compétences : ${act(d.competences || []).length}. Formations : ${act(d.formations || []).length}. Langues : ${act(d.langues || []).length}.`);
+  return L.join('\n');
+}
 async function aiCall(task, input) {
   const c = AI();
   if (!aiOn()) { toast('Active l’IA dans Réglages > IA'); return null; }
@@ -493,12 +508,14 @@ async function aiCall(task, input) {
   } catch (e) { toast('Connexion impossible : vérifie l’adresse du relais'); return null; }
   finally { ui.aiBusy = false; }
 }
-function aiSheet(title, text, apply) {
+function aiSheet(title, text, apply, old) {
+  const cmp = typeof old === 'string' && old.trim();
   ui.aiRes = { apply };
   openSheet(`<div class="sh"><h2>${esc(title)}</h2><button class="ib" data-act="closesheet">✕</button></div>
    <div class="small muted">${ui.aiLast ? 'Écrit par ' + (ui.aiLast.provider === 'claude' ? 'Claude' : 'l’IA gratuite') + '. ' : ''}Relis et corrige avant d’utiliser : l’IA peut se tromper et ne connaît que ton CV.</div>
-   <textarea id="aiTxt" rows="12">${esc(text)}</textarea>
+   ${cmp ? `<div class="aicmp"><div class="col"><b>Avant (ton texte actuel)</b><div class="old">${esc(old.trim())}</div></div><div class="col"><b>Proposé par l’IA (modifiable)</b><textarea id="aiTxt" rows="12">${esc(text)}</textarea></div></div>` : `<textarea id="aiTxt" rows="12">${esc(text)}</textarea>`}
    <div class="row2">${apply ? `<button class="btn" data-act="aiuse" style="flex:1">Utiliser ce texte</button>` : ''}<button class="btn ghost" data-act="aicopy" style="flex:1">Copier</button></div>`);
+  const sh = $('#sheet'); if (sh) sh.classList.toggle('wide', !!cmp);
 }
 function toast(m) {
   let t = $('#toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
@@ -623,7 +640,9 @@ function edStyle(cv) {
   return `<div class="card"><h2>Modèle</h2><div class="tplgrid">${TPLS.map(([k, n]) => `<button class="${cv.tpl === k ? 'on' : ''}" data-act="tpl" data-v="${k}">${thumb({ ...cv, tpl: k, updated: cv.updated }, 84, true)}<span>${n}</span></button>`).join('')}</div>
    ${cv.tpl !== 'moderne' ? `<label class="swrow"><span>Deux colonnes (colonne latérale)</span><span class="sw"><input type="checkbox" data-p="cols" data-r="1" ${cv.cols ? 'checked' : ''}><i></i></span></label>` : ''}
    <label class="swrow"><span>Une seule page (réglage automatique)</span><span class="sw"><input type="checkbox" data-p="one" data-r="1" ${cv.one ? 'checked' : ''}><i></i></span></label>
-   <button class="btn ghost" data-act="auto">✨ Auto : meilleur modèle et mise en page</button></div>
+   ${cv.one && !renderPages(cv).fit ? `<div class="updst nw"><b>⚠️ Ton CV est trop long pour tenir sur une seule page</b>, même avec le texte réduit : il garde donc sa taille normale (${renderPages(cv).pages.length} pages).<small>Pour le raccourcir : touche « ✨ Auto » (il masque les rubriques secondaires), raccourcis les missions, ou masque une rubrique dans l’onglet Plus.</small></div>` : ''}
+   <button class="btn ghost" data-act="auto">✨ Auto : meilleur modèle et mise en page</button>
+   ${aiOn() ? '<button class="btn ghost" data-act="aistyle">✨ Avis de l’IA sur la mise en page</button><div class="small muted">L’IA ne voit pas l’image du CV : elle juge d’après une description (modèle, longueur, rubriques, nombre de puces…).</div>' : ''}</div>
   <div class="card"><h2>Couleur</h2><div class="pal">${ACCENTS.map(c => `<button class="${cv.accent === c ? 'on' : ''}" style="background:${c}" data-act="cvacc" data-v="${c}" aria-label="${c}"></button>`).join('')}<label class="cpick" aria-label="Couleur libre"><input type="color" data-p="accent" value="${/^#[0-9a-f]{6}$/i.test(cv.accent) ? cv.accent : '#1F5BD8'}"><span>＋</span></label></div></div>
   <div class="card"><h2>Texte</h2><div class="seg"><button class="${cv.font !== 'serif' ? 'on' : ''}" data-act="cvfont" data-v="sans">Sans empattement</button><button class="${cv.font === 'serif' ? 'on' : ''}" data-act="cvfont" data-v="serif">Avec empattement</button></div>
    <label class="f">Taille du texte ${cv.one ? '<span class="muted small">(réduite automatiquement si besoin)</span>' : ''}<input type="range" min="0.82" max="1.15" step="0.01" data-p="scale" data-num="1" value="${cv.scale || 1}"></label>
@@ -747,8 +766,8 @@ function tabRegl() {
     <div class="updst">🔒 Quand tu utilises un bouton IA, le texte concerné (CV, annonce) est envoyé à ton relais puis au modèle d’IA. Sans l’IA activée, rien ne quitte ton appareil.</div>
     <button class="btn sm ${c.on ? '' : 'ghost'}" data-act="aitoggle">${c.on ? '☑ IA activée' : '☐ IA désactivée : touche pour activer'}</button>
     <h3>Quelle IA ?</h3>
-    <div class="seg"><button class="${c.prov !== 'claude' ? 'on' : ''}" data-act="aiprov" data-v="free">Gratuit</button><button class="${c.prov === 'claude' ? 'on' : ''}" data-act="aiprov" data-v="claude">Claude</button></div>
-    <div class="small muted">${c.prov === 'claude' ? (c.can === false ? '⚠️ Claude n’est pas disponible avec ce mot de passe : l’IA gratuite sera utilisée.' : 'Claude écrit mieux, surtout les lettres. Il est payant et réservé au propriétaire du relais.') : 'L’IA gratuite convient pour reformuler et écrire un profil. Ses textes sont moins fins que ceux de Claude.'}</div>
+    <div class="seg"><button class="${c.prov !== 'claude' ? 'on' : ''}" data-act="aiprov" data-v="free">Gratuit<small style="display:block;font-size:11px;opacity:.75">Llama 3.3 70B</small></button><button class="${c.prov === 'claude' ? 'on' : ''}" data-act="aiprov" data-v="claude">Claude<small style="display:block;font-size:11px;opacity:.75">Haiku</small></button></div>
+    <div class="small muted">${c.prov === 'claude' ? (c.can === false ? '⚠️ Claude n’est pas disponible avec ce mot de passe : l’IA gratuite sera utilisée.' : 'Modèle : Claude Haiku (Anthropic). Il écrit mieux, surtout les lettres. Il est payant et réservé au propriétaire du relais.') : 'Modèle : Llama 3.3 70B (Meta), via Workers AI sur ton compte Cloudflare. Il convient pour reformuler et écrire un profil. Ses textes sont moins fins que ceux de Claude.'}</div>
     <label class="f">Adresse du relais<input data-u="aiu" value="${esc(ui.aiu)}" placeholder="https://cv-ia.ton-compte.workers.dev" autocapitalize="off" autocorrect="off"></label>
     <label class="f">Mot de passe du relais<input data-u="ait" type="password" value="${esc(ui.ait)}" autocapitalize="off" autocorrect="off"></label>
     <div class="row2"><button class="btn" data-act="aisave" style="flex:1">Enregistrer</button><button class="btn ghost" data-act="aitest" style="flex:1">Tester</button></div></div>`; }
@@ -945,7 +964,7 @@ function updLive() {
   box.innerHTML = `<div class="lpin" style="width:${w + 24}px">${r.pages.map(p => `<div class="pgbox" style="width:${w}px;height:${h}px"><div style="transform:scale(${k});transform-origin:0 0;width:${PAGE_W}px">${p}</div></div>`).join('')}</div>`;
   box.scrollTop = st;
   const n = r.pages.length; let info = `${n} page${n > 1 ? 's' : ''}`;
-  if (cv.one) info += r.fit ? (r.sc < (cv.scale || 1) - 0.005 ? ` · texte à ${Math.round(r.sc * 100)} %` : ' · 1 page OK') : ' · ne tient pas : masque une rubrique';
+  if (cv.one) info += r.fit ? (r.sc < (cv.scale || 1) - 0.005 ? ` · texte à ${Math.round(r.sc * 100)} %` : ' · 1 page OK') : ' · ⚠️ trop long pour 1 page';
   if (r.over) info += ' · colonne latérale trop remplie';
   const el = $('#lpinfo'); if (el) el.textContent = info;
 }
@@ -1027,7 +1046,7 @@ function autoLayout() {
   const base = clone(cv); base.order = ['resume', 'domaines', 'experiences', 'formations', 'competences', 'langues', 'certifs', 'loisirs']; base.col = {}; base.sz = {}; base.scale = 1; base.cols = false;
   const d = base.data, rich = (d.competences || []).length + (d.langues || []).length;
   const score = t => { const c = { ...clone(base), tpl: t, updated: Date.now() }, r = renderPages(c, true); return { t, r, s: (cv.one ? (r.fit ? r.sc : 0) : 1 - r.pages.length * 0.3 - (r.over ? 0.2 : 0)) + (t === 'moderne' && rich >= 8 ? 0.04 : 0) + (t === 'classique' ? 0.01 : 0) }; };
-  const pick = () => ['classique', 'moderne', 'chrono', 'bandeau', 'elegant'].map(score).sort((a, b) => b.s - a.s)[0];
+  const pick = () => ['classique', 'moderne', 'chrono', 'bandeau', 'elegant', 'minimal', 'sobre', 'barre', 'tinte', 'souligne', 'double'].map(score).sort((a, b) => b.s - a.s)[0];
   let best = pick; best = pick(); const hid = [];
   if (cv.one) for (const k of ['loisirs', 'certifs', 'domaines']) { if (best.r.fit) break; if (base.show[k] === false) continue; base.show[k] = false; hid.push(SHORT[k]); best = pick(); }
   Object.assign(cv, { tpl: best.t, cols: false, scale: 1, order: base.order, col: {}, sz: {}, show: base.show });
@@ -1410,11 +1429,12 @@ const ACT = {
   demo: () => demoOn(),
   aitoggle: () => { AI().on = !AI().on; save(); render(); },
   aiprov: (v) => { AI().prov = v; save(); render(); },
+  aistyle: async () => { const cv = curCV(); if (!cv) return; const r = await aiCall('style', { titre: cv.data.identity.titre, desc: layoutDesc(cv) }); if (r) aiSheet('Avis sur la mise en page', r.text, null); },
   aiguide: () => { ui.tab = 'guide'; ui.gcat = 'ia'; render(); scrollTo(0, 0); },
   aisave: () => { const c = AI(), ch = c.url !== (ui.aiu || '').trim().replace(/\/+$/, '') || c.token !== (ui.ait || '').trim(); c.url = (ui.aiu || '').trim().replace(/\/+$/, ''); c.token = (ui.ait || '').trim(); if (ch) { c.okAt = 0; c.role = ''; } save(); toast('Réglages IA enregistrés'); render(); },
   aitest: async () => { const c = AI(); c.url = (ui.aiu || '').trim().replace(/\/+$/, ''); c.token = (ui.ait || '').trim(); const on = c.on; c.on = true; const r = await aiCall('ping', {}); c.on = on; if (r) { c.okAt = Date.now(); c.can = !!r.canClaude; c.role = r.role || ''; toast('Connexion OK (' + (r.provider === 'claude' ? 'Claude' : 'IA gratuite') + (r.who ? ', invité ' + r.who : '') + ')' + (r.note ? ' : ' + r.note : ''), 4500); save(); render(); } },
-  aiprofil: async () => { const cv = curCV(); if (!cv) return; const r = await aiCall('profil', { titre: cv.data.identity.titre, resume: cv.data.resume, cv: cvPlain(cv) }); if (r) aiSheet('Profil proposé', r.text, t => { cv.data.resume = t; touch(cv); closeSheet(); render(); toast('Profil remplacé'); }); },
-  aipuces: async (v, el) => { const cv = curCV(), e = cv && cv.data.experiences.find(x => x.id === el.dataset.i); if (!e) return; if (!(e.desc || '').trim()) { toast('Écris d’abord quelques missions, même brutes'); return; } const r = await aiCall('puces', { poste: e.poste, entreprise: e.entreprise, text: e.desc }); if (r) aiSheet('Puces proposées', r.text, t => { e.desc = t; touch(cv); closeSheet(); render(); toast('Missions remplacées'); }); },
+  aiprofil: async () => { const cv = curCV(); if (!cv) return; const r = await aiCall('profil', { titre: cv.data.identity.titre, resume: cv.data.resume, cv: cvPlain(cv) }); if (r) aiSheet('Profil proposé', r.text, t => { cv.data.resume = t; touch(cv); closeSheet(); render(); toast('Profil remplacé'); }, cv.data.resume); },
+  aipuces: async (v, el) => { const cv = curCV(), e = cv && cv.data.experiences.find(x => x.id === el.dataset.i); if (!e) return; if (!(e.desc || '').trim()) { toast('Écris d’abord quelques missions, même brutes'); return; } const r = await aiCall('puces', { poste: e.poste, entreprise: e.entreprise, text: e.desc }); if (r) aiSheet('Puces proposées', r.text, t => { e.desc = t; touch(cv); closeSheet(); render(); toast('Missions remplacées'); }, e.desc); },
   ailettre: async () => { const o = ui.offre, cv = S.cvs.find(c => c.id === o.cvId); if (!cv || !o.text.trim()) { toast('Colle d’abord l’annonce'); return; } const r = await aiCall('lettre', { poste: o.poste, entreprise: o.entreprise, annonce: o.text, cv: cvPlain(cv) }); if (r) aiSheet('Lettre de motivation', r.text, null); },
   aientretien: async () => { const o = ui.offre, cv = S.cvs.find(c => c.id === o.cvId); if (!cv || !o.text.trim()) { toast('Colle d’abord l’annonce'); return; } const r = await aiCall('entretien', { poste: o.poste, entreprise: o.entreprise, annonce: o.text, cv: cvPlain(cv) }); if (r) aiSheet('Préparer l’entretien', r.text, null); },
   aiuse: () => { const t = ($('#aiTxt') || {}).value || ''; if (ui.aiRes && ui.aiRes.apply && t.trim()) ui.aiRes.apply(t.trim()); },
