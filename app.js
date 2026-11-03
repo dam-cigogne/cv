@@ -25,7 +25,7 @@ const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert
 /* ============ version et historique des mises à jour ============ */
 const APP_VERSION = '1.9.6';
 const CHANGELOG = [
-  { v: '1.9.6', d: '03/11/2026', l: ['Importer un PDF : le CV converti garde son PDF d’origine et un bouton « Comparer avec le PDF d’origine » les affiche côte à côte ; nouveau choix « Le garder tel quel » (consulter, partager, comparer avec tes autres CV, sans rien modifier) ou « Le convertir en CV modifiable »', 'Style : bouton « Avis de l’IA sur la mise en page » (conseils d’après le modèle, la longueur, les rubriques et les puces)', 'Une seule page : si le CV est trop long pour tenir, un message clair l’explique (Style et aperçu) et le texte garde une taille lisible au lieu d’être réduit en vain', 'IA : pour le profil et les puces, l’ancien texte s’affiche à côté du texte proposé pour comparer avant de remplacer (l’un sous l’autre sur un petit écran)', 'Style : 6 nouveaux modèles de CV (Minimaliste, Sobre ATS, Barre latérale, Fond teinté, Souligné, Double filet)', 'Réglages > IA : le modèle utilisé est indiqué à côté de « Gratuit » (Llama 3.3 70B) et de « Claude » (Haiku)'] },
+  { v: '1.9.6', d: '03/11/2026', l: ['Comparaison : choisis l’ordre de gauche à droite (▲ ▼ dans la liste, ◀ ▶ sur chaque colonne)', 'Zoom + et − plus progressifs (environ 12 % par appui) dans la comparaison, l’aperçu plein écran et l’aperçu de l’éditeur', 'Importer un PDF : le CV converti garde son PDF d’origine et un bouton « Comparer avec le PDF d’origine » les affiche côte à côte ; nouveau choix « Le garder tel quel » (consulter, partager, comparer avec tes autres CV, sans rien modifier) ou « Le convertir en CV modifiable »', 'Style : bouton « Avis de l’IA sur la mise en page » (conseils d’après le modèle, la longueur, les rubriques et les puces)', 'Une seule page : si le CV est trop long pour tenir, un message clair l’explique (Style et aperçu) et le texte garde une taille lisible au lieu d’être réduit en vain', 'IA : pour le profil et les puces, l’ancien texte s’affiche à côté du texte proposé pour comparer avant de remplacer (l’un sous l’autre sur un petit écran)', 'Style : 6 nouveaux modèles de CV (Minimaliste, Sobre ATS, Barre latérale, Fond teinté, Souligné, Double filet)', 'Réglages > IA : le modèle utilisé est indiqué à côté de « Gratuit » (Llama 3.3 70B) et de « Claude » (Haiku)'] },
   { v: '1.9.5', d: '02/11/2026', l: ['Admin : boutons directs vers chaque page utile (crédit et consommation Claude, clés API, secrets Cloudflare, Workers)'] },
   { v: '1.9.4', d: '02/11/2026', l: ['Nouveau : onglet « Admin » dans Réglages, visible seulement avec ton mot de passe propriétaire (état du relais, liens Cloudflare et console Claude, mémo des secrets, invités)', 'Guide : fiche « Voir mon crédit Claude »'] },
   { v: '1.9.3', d: '02/11/2026', l: ['IA : choix « Gratuit / Claude » dans Réglages > IA (Claude réservé au propriétaire du relais)', 'IA : la fenêtre du texte proposé indique quelle IA l’a écrit', 'Guide : fiche « Prêter l’appli à un proche »'] },
@@ -859,7 +859,8 @@ function cmpSheet() {
   ui.cmpSel = ui.cmpSel.filter(id => all.some(c => c.id === id));
   openSheet(`<div class="sh"><h2>Comparer des CV</h2><button class="ib" data-act="closesheet">✕</button></div>
    <div class="small muted">Choisis 2 ou 3 éléments (tes CV et tes PDF d’origine) : ils s’affichent côte à côte. Mets ton CV d’origine à gauche et tes versions modifiées à côté. Pince ou utilise + et − pour zoomer.</div>
-   <div>${all.map(c => `<div class="skill"><button class="ib sm" data-act="cmptoggle" data-id="${c.id}" aria-label="Choisir">${ui.cmpSel.includes(c.id) ? '☑' : '☐'}</button><span style="flex:1"><b>${esc(c.name)}</b>${c.tag}</span></div>`).join('')}</div>
+   <div>${[...ui.cmpSel.map(id => all.find(c => c.id === id)), ...all.filter(c => !ui.cmpSel.includes(c.id))].map(c => { const i = ui.cmpSel.indexOf(c.id), on = i >= 0; return `<div class="skill"><button class="ib sm" data-act="cmptoggle" data-id="${c.id}" aria-label="Choisir">${on ? '☑' : '☐'}</button><span style="flex:1"><b>${on ? (i + 1) + '. ' : ''}${esc(c.name)}</b>${c.tag}</span>${on && ui.cmpSel.length > 1 ? `<button class="ib sm" data-act="cmpmove" data-id="${c.id}" data-d="-1" aria-label="Plus à gauche" ${i === 0 ? 'disabled' : ''}>▲</button><button class="ib sm" data-act="cmpmove" data-id="${c.id}" data-d="1" aria-label="Plus à droite" ${i === ui.cmpSel.length - 1 ? 'disabled' : ''}>▼</button>` : ''}</div>`; }).join('')}</div>
+   <div class="small muted">1 = à gauche. Utilise ▲ ▼ pour changer l’ordre, de gauche à droite.</div>
    <button class="btn" data-act="cmpgo" ${ui.cmpSel.length < 2 ? 'disabled' : ''}>Comparer (${ui.cmpSel.length})</button>`);
 }
 function drawCmp() {
@@ -867,13 +868,14 @@ function drawCmp() {
   const n = its.length, base = (innerWidth - 8 * (n + 1)) / n, w = Math.max(90, base * ui.cmpZoom), k = w / PAGE_W, h = w * 297 / 210;
   let el = $('#cmp'); if (!el) { el = document.createElement('div'); el.id = 'cmp'; document.body.appendChild(el); }
   const sc = el.querySelector('.scroll'), st = sc ? [sc.scrollTop, sc.scrollLeft] : [0, 0];
+  const mv = it => { if (n < 2) return ''; const i = its.indexOf(it); return `<span class="mv" style="display:flex;gap:6px;margin-top:3px"><button class="btn sm ghost" data-act="cmpmove" data-id="${it.id}" data-d="-1" ${i === 0 ? 'disabled' : ''} aria-label="Déplacer à gauche">◀</button><button class="btn sm ghost" data-act="cmpmove" data-id="${it.id}" data-d="1" ${i === n - 1 ? 'disabled' : ''} aria-label="Déplacer à droite">▶</button></span>`; };
   const col = it => {
     if (it.k === 'pdf') {
       const c = pdfCache.get(it.id + ':1100:0');
-      return `<div class="col" style="width:${w}px"><div class="ch"><b>${esc(it.name)}</b><span>PDF d’origine · ${it.p.pages} page${it.p.pages > 1 ? 's' : ''}</span></div>${c ? c.map(g => `<div class="pgbox" style="width:${w}px"><img src="${g.src}" alt="" style="display:block;width:100%;height:auto;background:#fff"></div>`).join('') : `<div class="pgbox" style="width:${w}px;height:${h}px;background:#fff;color:#555;display:flex;align-items:center;justify-content:center;font-size:13px">Chargement…</div>`}</div>`;
+      return `<div class="col" style="width:${w}px"><div class="ch"><b>${esc(it.name)}</b><span>PDF d’origine · ${it.p.pages} page${it.p.pages > 1 ? 's' : ''}</span>${mv(it)}</div>${c ? c.map(g => `<div class="pgbox" style="width:${w}px"><img src="${g.src}" alt="" style="display:block;width:100%;height:auto;background:#fff"></div>`).join('') : `<div class="pgbox" style="width:${w}px;height:${h}px;background:#fff;color:#555;display:flex;align-items:center;justify-content:center;font-size:13px">Chargement…</div>`}</div>`;
     }
     const { pages } = renderPages(it.cv), q = qualityChecks(it.cv).score;
-    return `<div class="col" style="width:${w}px"><div class="ch"><b>${esc(it.name)}</b><span>${pages.length} page${pages.length > 1 ? 's' : ''} · note ${q}</span></div>${pages.map(p => `<div class="pgbox" style="width:${w}px;height:${h}px"><div class="pg-in" style="transform:scale(${k});transform-origin:0 0;width:${PAGE_W}px">${p}</div></div>`).join('')}</div>`;
+    return `<div class="col" style="width:${w}px"><div class="ch"><b>${esc(it.name)}</b><span>${pages.length} page${pages.length > 1 ? 's' : ''} · note ${q}</span>${mv(it)}</div>${pages.map(p => `<div class="pgbox" style="width:${w}px;height:${h}px"><div class="pg-in" style="transform:scale(${k});transform-origin:0 0;width:${PAGE_W}px">${p}</div></div>`).join('')}</div>`;
   };
   el.innerHTML = `<div class="bar"><button class="btn sm ghost" data-act="closecmp">✕ Fermer</button><span class="small muted">${n === 1 ? esc(its[0].name) : n + ' CV'}</span><div class="row2">${n === 1 && its[0].k === 'pdf' ? `<button class="btn sm ghost" data-act="pdfdl" data-id="${its[0].id}">Partager</button>` : ''}<button class="ib sm" data-act="cmpzoom" data-d="-1" aria-label="Zoom −">−</button><button class="ib sm" data-act="cmpzoom" data-d="1" aria-label="Zoom +">+</button></div></div>
    <div class="scroll"><div class="cols">${its.map(col).join('')}</div></div>`;
@@ -1441,6 +1443,7 @@ const ACT = {
   dismiss: () => { const cv = curCV(); delete cv.review; touch(cv); render(); },
   prev: (v, el) => { const id = el.dataset.id; openPreview(S.cvs.find(c => c.id === id)); },
   cmpopen: () => cmpSheet(),
+  cmpmove: (v, el) => { const a = ui.cmpShow || ui.cmpSel || [], i = a.indexOf(el.dataset.id), j = i + (+el.dataset.d); if (i < 0 || j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; if ($('#cmp')) drawCmp(); else cmpSheet(); },
   cmpsrc: (v, el) => { const cv = S.cvs.find(c => c.id === el.dataset.id); if (!cv || !cv.srcPdf) return; ui.cmpShow = [cv.srcPdf, cv.id]; ui.cmpZoom = 1; drawCmp(); },
   pdfkeep: () => { const f = ui.pdfFile; closeSheet(); if (f) pdfAdd(f); },
   pdfconv0: () => { const f = ui.pdfFile; closeSheet(); if (f) { ui.impSrc = { file: f }; importPdf(f); } },
@@ -1456,9 +1459,9 @@ const ACT = {
   cmptoggle: (v, el) => { const id = el.dataset.id, s = ui.cmpSel || (ui.cmpSel = []); const i = s.indexOf(id); if (i >= 0) s.splice(i, 1); else if (s.length >= 3) { toast('3 CV maximum'); return; } else s.push(id); cmpSheet(); },
   cmpgo: () => { if ((ui.cmpSel || []).length < 2) { toast('Choisis au moins 2 CV'); return; } closeSheet(); ui.cmpShow = null; ui.cmpZoom = 1; drawCmp(); },
   closecmp: () => { ui.cmpShow = null; $('#cmp')?.remove(); },
-  cmpzoom: (v, el) => { ui.cmpZoom = Math.max(.6, Math.min(3, (ui.cmpZoom || 1) + (+el.dataset.d) * .4)); drawCmp(); },
+  cmpzoom: (v, el) => { ui.cmpZoom = Math.max(.5, Math.min(4, (ui.cmpZoom || 1) * Math.pow(1.12, +el.dataset.d))); drawCmp(); },
   closeprev: () => { $('#prev')?.remove(); ui.prevId = null; },
-  prevzoom: (v, el) => { ui.prevZoom = Math.max(.6, Math.min(2.2, ui.prevZoom + (+el.dataset.d) * .3)); drawPreview(); },
+  prevzoom: (v, el) => { ui.prevZoom = Math.max(.6, Math.min(2.6, ui.prevZoom * Math.pow(1.12, +el.dataset.d))); drawPreview(); },
   print: () => printCV(S.cvs.find(c => c.id === ui.prevId)),
   copytxt: () => { navigator.clipboard?.writeText(cvText(S.cvs.find(c => c.id === ui.prevId))).then(() => toast('Texte copié'), () => toast('Copie impossible')); },
   cvmenu: (v, el) => {
@@ -1478,7 +1481,7 @@ const ACT = {
   rmphoto: () => { const cv = curCV(); cv.data.identity.photo = ''; cv.data.identity.photoSrc = ''; touch(cv); render(); },
   crop: () => { const cv = curCV(), i = cv.data.identity; openCrop(i.photoSrc || i.photo); },
   cropok: () => cropSave(),
-  lzoom: (v, el) => { ui.lz = Math.max(.6, Math.min(2.4, (ui.lz || 1) + (+el.dataset.d) * .25)); updLive(); },
+  lzoom: (v, el) => { ui.lz = Math.max(.6, Math.min(2.6, (ui.lz || 1) * Math.pow(1.12, +el.dataset.d))); updLive(); },
   auto: () => autoLayout(),
   undoauto: () => { const cv = curCV(); if (!ui.undo || ui.undo.id !== cv.id) return; Object.assign(cv, clone(ui.undo.s)); ui.undo = null; touch(cv); render(); toast('Auto annulé'); },
   eye: (v, el) => { const cv = curCV(), k = el.dataset.k; cv.show[k] = cv.show[k] === false ? true : false; touch(cv); render(); },
