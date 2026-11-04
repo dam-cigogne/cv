@@ -23,8 +23,9 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.9.7';
+const APP_VERSION = '1.9.8';
 const CHANGELOG = [
+  { v: '1.9.8', d: '04/11/2026', l: ['Import PDF : compatibilité avec les navigateurs plus anciens (Mac, Windows) et message d’erreur plus précis'] },
   { v: '1.9.7', d: '03/11/2026', l: ['Correction : le texte du CV ne dépasse plus de la page avec la police Montserrat (la mise en page est recalculée quand la police est chargée)'] },
   { v: '1.9.6', d: '03/11/2026', l: ['Lettre de motivation et préparation d’entretien : bouton « Enregistrer dans la candidature » (créée si besoin) ; la lettre se retrouve, se modifie et se copie dans la fiche de la candidature (onglet Suivi)', 'Comparaison : choisis l’ordre de gauche à droite (▲ ▼ dans la liste, ◀ ▶ sur chaque colonne)', 'Zoom + et − plus progressifs (environ 12 % par appui) dans la comparaison, l’aperçu plein écran et l’aperçu de l’éditeur', 'Importer un PDF : le CV converti garde son PDF d’origine et un bouton « Comparer avec le PDF d’origine » les affiche côte à côte ; nouveau choix « Le garder tel quel » (consulter, partager, comparer avec tes autres CV, sans rien modifier) ou « Le convertir en CV modifiable »', 'Style : bouton « Avis de l’IA sur la mise en page » (conseils d’après le modèle, la longueur, les rubriques et les puces)', 'Une seule page : si le CV est trop long pour tenir, un message clair l’explique (Style et aperçu) et le texte garde une taille lisible au lieu d’être réduit en vain', 'IA : pour le profil et les puces, l’ancien texte s’affiche à côté du texte proposé pour comparer avant de remplacer (l’un sous l’autre sur un petit écran)', 'Style : 6 nouveaux modèles de CV (Minimaliste, Sobre ATS, Barre latérale, Fond teinté, Souligné, Double filet)', 'Réglages > IA : le modèle utilisé est indiqué à côté de « Gratuit » (Llama 3.3 70B) et de « Claude » (Haiku)'] },
   { v: '1.9.5', d: '02/11/2026', l: ['Admin : boutons directs vers chaque page utile (crédit et consommation Claude, clés API, secrets Cloudflare, Workers)'] },
@@ -566,11 +567,17 @@ const pdfPut = (id, buf) => idbDo('readwrite', st => st.put(buf, id));
 const pdfGet = id => idbDo('readonly', st => st.get(id));
 const pdfDel = id => idbDo('readwrite', st => st.delete(id));
 const pdfCache = new Map();
-async function pdfLib() { const pdfjs = await import('./pdf.min.mjs'); pdfjs.GlobalWorkerOptions.workerSrc = new URL('./pdf.worker.min.mjs', import.meta.url).href; return pdfjs; }
+let pdfOld = false; /* navigateur ancien : on bascule sur la version compatible de pdf.js */
+async function pdfLib(old) { const pdfjs = await import(old ? './pdf4.min.mjs' : './pdf.min.mjs'); pdfjs.GlobalWorkerOptions.workerSrc = new URL(old ? './pdf4.worker.min.mjs' : './pdf.worker.min.mjs', import.meta.url).href; return pdfjs; }
+async function pdfOpen(buf) {
+  const get = async old => (await pdfLib(old)).getDocument({ data: new Uint8Array(buf.slice(0)) }).promise;
+  if (pdfOld) return get(true);
+  try { return await get(false); } catch (e) { try { const d = await get(true); pdfOld = true; return d; } catch (e2) { throw e; } }
+}
 async function pdfRender(id, wpx, max) {
   const key = id + ':' + wpx + ':' + (max || 0); if (pdfCache.has(key)) return pdfCache.get(key);
   const buf = await pdfGet(id); if (!buf) throw new Error('absent');
-  const pdfjs = await pdfLib(), doc = await pdfjs.getDocument({ data: new Uint8Array(buf.slice(0)) }).promise, out = [];
+  const doc = await pdfOpen(buf), out = [];
   for (let n = 1; n <= Math.min(doc.numPages, max || 12); n++) {
     const pg = await doc.getPage(n), v0 = pg.getViewport({ scale: 1 }), vp = pg.getViewport({ scale: wpx / v0.width });
     const c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
@@ -917,13 +924,16 @@ function printCV(cv) {
   setTimeout(() => print(), 120);
 }
 
+/* compatibilité navigateurs un peu anciens (pdf.js en a besoin) */
+if (!Promise.withResolvers) Promise.withResolvers = function () { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
+if (!Array.prototype.at) Object.defineProperty(Array.prototype, 'at', { value(i) { i = Math.trunc(i) || 0; if (i < 0) i += this.length; return this[i]; }, configurable: true, writable: true });
+if (!Object.hasOwn) Object.hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+if (!URL.parse) URL.parse = (u, b) => { try { return new URL(u, b); } catch (e) { return null; } };
 /* ============ import PDF ============ */
 async function importPdf(file) {
   toast('Lecture du PDF…');
   try {
-    const pdfjs = await import('./pdf.min.mjs');
-    pdfjs.GlobalWorkerOptions.workerSrc = new URL('./pdf.worker.min.mjs', import.meta.url).href;
-    const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+    const doc = await pdfOpen(await file.arrayBuffer());
     const pages = [];
     for (let n = 1; n <= Math.min(doc.numPages, 6); n++) {
       const p = await doc.getPage(n), vp = p.getViewport({ scale: 1 });
@@ -932,7 +942,7 @@ async function importPdf(file) {
     const r = parseCV(pages);
     ui.imp = { r, name: (r.ok && r.data.identity.nom ? 'CV ' + r.data.identity.nom.split(' ')[0] : file.name.replace(/\.pdf$/i, '')), file: file.name };
     showImport();
-  } catch (e) { console.error(e); toast('Impossible de lire ce PDF'); }
+  } catch (e) { console.error(e); toast('Impossible de lire ce PDF' + (e && e.message ? ' (' + String(e.message).slice(0, 90) + ')' : '')); }
 }
 function showImport() {
   const { r, name } = ui.imp;
