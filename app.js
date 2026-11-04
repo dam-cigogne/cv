@@ -25,7 +25,7 @@ const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert
 /* ============ version et historique des mises à jour ============ */
 const APP_VERSION = '1.9.8';
 const CHANGELOG = [
-  { v: '1.9.8', d: '04/11/2026', l: ['Import PDF : compatibilité avec les navigateurs plus anciens (Mac, Windows) et message d’erreur plus précis'] },
+  { v: '1.9.8', d: '04/11/2026', l: ['Import PDF : fonctionne maintenant aussi sur les vieux Mac / navigateurs anciens (lecteur PDF de secours) et message d’erreur plus précis'] },
   { v: '1.9.7', d: '03/11/2026', l: ['Correction : le texte du CV ne dépasse plus de la page avec la police Montserrat (la mise en page est recalculée quand la police est chargée)'] },
   { v: '1.9.6', d: '03/11/2026', l: ['Lettre de motivation et préparation d’entretien : bouton « Enregistrer dans la candidature » (créée si besoin) ; la lettre se retrouve, se modifie et se copie dans la fiche de la candidature (onglet Suivi)', 'Comparaison : choisis l’ordre de gauche à droite (▲ ▼ dans la liste, ◀ ▶ sur chaque colonne)', 'Zoom + et − plus progressifs (environ 12 % par appui) dans la comparaison, l’aperçu plein écran et l’aperçu de l’éditeur', 'Importer un PDF : le CV converti garde son PDF d’origine et un bouton « Comparer avec le PDF d’origine » les affiche côte à côte ; nouveau choix « Le garder tel quel » (consulter, partager, comparer avec tes autres CV, sans rien modifier) ou « Le convertir en CV modifiable »', 'Style : bouton « Avis de l’IA sur la mise en page » (conseils d’après le modèle, la longueur, les rubriques et les puces)', 'Une seule page : si le CV est trop long pour tenir, un message clair l’explique (Style et aperçu) et le texte garde une taille lisible au lieu d’être réduit en vain', 'IA : pour le profil et les puces, l’ancien texte s’affiche à côté du texte proposé pour comparer avant de remplacer (l’un sous l’autre sur un petit écran)', 'Style : 6 nouveaux modèles de CV (Minimaliste, Sobre ATS, Barre latérale, Fond teinté, Souligné, Double filet)', 'Réglages > IA : le modèle utilisé est indiqué à côté de « Gratuit » (Llama 3.3 70B) et de « Claude » (Haiku)'] },
   { v: '1.9.5', d: '02/11/2026', l: ['Admin : boutons directs vers chaque page utile (crédit et consommation Claude, clés API, secrets Cloudflare, Workers)'] },
@@ -568,11 +568,22 @@ const pdfGet = id => idbDo('readonly', st => st.get(id));
 const pdfDel = id => idbDo('readwrite', st => st.delete(id));
 const pdfCache = new Map();
 let pdfOld = false; /* navigateur ancien : on bascule sur la version compatible de pdf.js */
-async function pdfLib(old) { const pdfjs = await import(old ? './pdf4.min.mjs' : './pdf.min.mjs'); pdfjs.GlobalWorkerOptions.workerSrc = new URL(old ? './pdf4.worker.min.mjs' : './pdf.worker.min.mjs', import.meta.url).href; return pdfjs; }
+let pdf2P;
+function pdfLib(old) {
+  if (!old) return import('./pdf.min.mjs').then(m => { m.GlobalWorkerOptions.workerSrc = new URL('./pdf.worker.min.mjs', import.meta.url).href; return m; });
+  /* version 2.x (ES2018) pour les vieux navigateurs : script classique */
+  if (!pdf2P) pdf2P = new Promise((ok, ko) => {
+    if (window.pdfjsLib) return ok(window.pdfjsLib);
+    const sc = document.createElement('script'); sc.src = new URL('./pdf2.min.js', import.meta.url).href;
+    sc.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('./pdf2.worker.min.js', import.meta.url).href; ok(window.pdfjsLib); };
+    sc.onerror = () => { pdf2P = null; ko(new Error('pdf2 introuvable')); }; document.head.appendChild(sc);
+  });
+  return pdf2P;
+}
 async function pdfOpen(buf) {
   const get = async old => (await pdfLib(old)).getDocument({ data: new Uint8Array(buf.slice(0)) }).promise;
   if (pdfOld) return get(true);
-  try { return await get(false); } catch (e) { try { const d = await get(true); pdfOld = true; return d; } catch (e2) { throw e; } }
+  try { return await get(false); } catch (e) { try { const d = await get(true); pdfOld = true; return d; } catch (e2) { throw new Error(String(e.message).slice(0, 40) + ' / ' + String(e2.message).slice(0, 40)); } }
 }
 async function pdfRender(id, wpx, max) {
   const key = id + ':' + wpx + ':' + (max || 0); if (pdfCache.has(key)) return pdfCache.get(key);
