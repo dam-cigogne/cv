@@ -419,3 +419,11 @@ body.demo #cmp{top:calc(30px + env(safe-area-inset-top,0px))}
 .pg.t-coin aside .st{font-size:calc(12.5pt*var(--s,1));margin-bottom:2mm}
 .pg.t-coin aside h1.nm{flex:none;margin-bottom:5mm}
 .pg.t-coin aside .cts div{margin-bottom:2.4mm}
+
+.pwrow{display:flex;gap:6px;align-items:center}.pwrow input{flex:1}
+.aire{margin-top:10px;display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line,#ddd);padding-top:10px}
+.aire .ins{width:100%}
+.aipk{line-height:1.9;margin:8px 0}.aipk .sn{cursor:pointer;padding:2px 4px;border-radius:6px;background:rgba(0,0,0,.05)}
+.aipk .sn.on{background:#fbd5d5;color:#a11;text-decoration:line-through}
+.aire .mk{display:inline-block;background:#fbd5d5;color:#a11;border-radius:10px;padding:1px 8px;margin:2px;cursor:pointer}
+[hidden]{display:none!important}

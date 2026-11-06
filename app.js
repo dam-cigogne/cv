@@ -23,8 +23,9 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.9.8';
+const APP_VERSION = '1.9.9';
 const CHANGELOG = [
+  { v: '1.9.9', d: '06/11/2026', l: ['Réglages > IA : bouton pour afficher le mot de passe', 'IA : régénérer un texte autant de fois que tu veux, choisir les phrases ou mots à changer, ajouter une consigne, revenir à la version précédente'] },
   { v: '1.9.8', d: '04/11/2026', l: ['Import PDF : fonctionne maintenant aussi sur les vieux Mac / navigateurs anciens (lecteur PDF de secours) et message d’erreur plus précis'] },
   { v: '1.9.7', d: '03/11/2026', l: ['Correction : le texte du CV ne dépasse plus de la page avec la police Montserrat (la mise en page est recalculée quand la police est chargée)'] },
   { v: '1.9.6', d: '03/11/2026', l: ['Lettre de motivation et préparation d’entretien : bouton « Enregistrer dans la candidature » (créée si besoin) ; la lettre se retrouve, se modifie et se copie dans la fiche de la candidature (onglet Suivi)', 'Comparaison : choisis l’ordre de gauche à droite (▲ ▼ dans la liste, ◀ ▶ sur chaque colonne)', 'Zoom + et − plus progressifs (environ 12 % par appui) dans la comparaison, l’aperçu plein écran et l’aperçu de l’éditeur', 'Importer un PDF : le CV converti garde son PDF d’origine et un bouton « Comparer avec le PDF d’origine » les affiche côte à côte ; nouveau choix « Le garder tel quel » (consulter, partager, comparer avec tes autres CV, sans rien modifier) ou « Le convertir en CV modifiable »', 'Style : bouton « Avis de l’IA sur la mise en page » (conseils d’après le modèle, la longueur, les rubriques et les puces)', 'Une seule page : si le CV est trop long pour tenir, un message clair l’explique (Style et aperçu) et le texte garde une taille lisible au lieu d’être réduit en vain', 'IA : pour le profil et les puces, l’ancien texte s’affiche à côté du texte proposé pour comparer avant de remplacer (l’un sous l’autre sur un petit écran)', 'Style : 6 nouveaux modèles de CV (Minimaliste, Sobre ATS, Barre latérale, Fond teinté, Souligné, Double filet)', 'Réglages > IA : le modèle utilisé est indiqué à côté de « Gratuit » (Llama 3.3 70B) et de « Claude » (Haiku)'] },
@@ -511,18 +512,27 @@ async function aiCall(task, input) {
     const r = await fetch(c.url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-token': c.token || '' }, body: JSON.stringify({ task, input, provider: c.prov }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok || !j.text) { toast(j.error || 'L’IA ne répond pas (code ' + r.status + ')'); return null; }
-    ui.aiLast = j; if (j.note) toast(j.note, 4500);
+    ui.aiLast = j; if (task !== 'ping') ui.aiReq = { task, input }; if (j.note) toast(j.note, 4500);
     return j;
   } catch (e) { toast('Connexion impossible : vérifie l’adresse du relais'); return null; }
   finally { ui.aiBusy = false; }
 }
+function aiPickDraw() { const pk = $('#aiPk'); if (!pk) return; pk.innerHTML = '<div class="small muted">Touche les phrases à changer (elles passent en rouge), puis « Régénérer ».</div>' + ui.aiSent.map((x, n) => `<span class="sn${ui.aiSel.has(n) ? ' on' : ''}" data-act="aipick" data-n="${n}">${esc(x)}</span>`).join(' ') + '<div><button class="btn sm ghost" data-act="aipickon">✏️ Revenir au texte</button></div>'; aiMkDraw(); }
+function aiMkDraw() { const m = $('#aiMk'); if (!m) return; const k = ui.aiSel.size + ui.aiMarks.length; m.innerHTML = (ui.aiMarks.length ? 'Marqués : ' + ui.aiMarks.map((x, n) => `<span class="mk" data-act="aimkdel" data-n="${n}">${esc(x.length > 40 ? x.slice(0, 40) + '…' : x)} ✕</span>`).join(' ') + '<br>' : '') + (k ? k + ' passage' + (k > 1 ? 's' : '') + ' à changer' : 'Rien de marqué : une version différente sera proposée'); }
+function refreshBack() {}
 function aiSheet(title, text, apply, old, kind) {
   const cmp = typeof old === 'string' && old.trim();
-  ui.aiRes = { apply, kind };
+  ui.aiRes = { apply, kind, title, old, req: ui.aiReq, hist: ((ui.aiRes && ui.aiRes.keep) || []), keep: null }; ui.aiSel = new Set(); ui.aiMarks = []; ui.aiPick = false;
   openSheet(`<div class="sh"><h2>${esc(title)}</h2><button class="ib" data-act="closesheet">✕</button></div>
    <div class="small muted">${ui.aiLast ? 'Écrit par ' + (ui.aiLast.provider === 'claude' ? 'Claude' : 'l’IA gratuite') + '. ' : ''}Relis et corrige avant d’utiliser : l’IA peut se tromper et ne connaît que ton CV.</div>
    ${cmp ? `<div class="aicmp"><div class="col"><b>Avant (ton texte actuel)</b><div class="old">${esc(old.trim())}</div></div><div class="col"><b>Proposé par l’IA (modifiable)</b><textarea id="aiTxt" rows="12">${esc(text)}</textarea></div></div>` : `<textarea id="aiTxt" rows="12">${esc(text)}</textarea>`}
+   <div id="aiPk" class="aipk" hidden></div>
    <div class="row2">${apply ? `<button class="btn" data-act="aiuse" style="flex:1">Utiliser ce texte</button>` : ''}<button class="btn ghost" data-act="aicopy" style="flex:1">Copier</button></div>
+   ${ui.aiRes.req ? `<div class="aire"><div class="small"><b>Pas encore ça ?</b> Choisis ce que tu n’aimes pas, puis régénère (autant de fois que tu veux).</div>
+   <div class="row2"><button class="btn sm ghost" data-act="aipickon" style="flex:1">👆 Choisir des phrases</button><button class="btn sm ghost" data-act="aimark" style="flex:1">🚫 Marquer la sélection</button></div>
+   <div id="aiMk" class="small muted"></div>
+   <input id="aiIns" class="ins" placeholder="Consigne (facultatif) : plus court, plus direct, ton plus chaleureux…" autocapitalize="off">
+   <div class="row2"><button class="btn" data-act="airegen" style="flex:1">🔄 Régénérer</button>${ui.aiRes.hist.length ? '<button class="btn ghost" data-act="aiback" style="flex:1">↶ Version précédente</button>' : ''}</div></div>` : ''}
    ${kind ? `<button class="btn ${apply ? 'ghost' : ''}" data-act="aisavejob">💾 Enregistrer dans la candidature</button><div class="small muted">Elle sera retrouvée dans l’onglet Suivi, en ouvrant la candidature. Si elle n’existe pas encore, elle est créée.</div>` : ''}`);
   const sh = $('#sheet'); if (sh) sh.classList.toggle('wide', !!cmp);
 }
@@ -850,7 +860,7 @@ function tabRegl() {
     <div class="seg"><button class="${c.prov !== 'claude' ? 'on' : ''}" data-act="aiprov" data-v="free">Gratuit<small style="display:block;font-size:11px;opacity:.75">Llama 3.3 70B</small></button><button class="${c.prov === 'claude' ? 'on' : ''}" data-act="aiprov" data-v="claude">Claude<small style="display:block;font-size:11px;opacity:.75">Haiku</small></button></div>
     <div class="small muted">${c.prov === 'claude' ? (c.can === false ? '⚠️ Claude n’est pas disponible avec ce mot de passe : l’IA gratuite sera utilisée.' : 'Modèle : Claude Haiku (Anthropic). Il écrit mieux, surtout les lettres. Il est payant et réservé au propriétaire du relais.') : 'Modèle : Llama 3.3 70B (Meta), via Workers AI sur ton compte Cloudflare. Il convient pour reformuler et écrire un profil. Ses textes sont moins fins que ceux de Claude.'}</div>
     <label class="f">Adresse du relais<input data-u="aiu" value="${esc(ui.aiu)}" placeholder="https://cv-ia.ton-compte.workers.dev" autocapitalize="off" autocorrect="off"></label>
-    <label class="f">Mot de passe du relais<input data-u="ait" type="password" value="${esc(ui.ait)}" autocapitalize="off" autocorrect="off"></label>
+    <label class="f">Mot de passe du relais<span class="pwrow"><input data-u="ait" id="aitIn" type="password" value="${esc(ui.ait)}" autocapitalize="off" autocorrect="off"><button type="button" class="ib sm" data-act="aieye" aria-label="Afficher ou masquer le mot de passe">👁</button></span></label>
     <div class="row2"><button class="btn" data-act="aisave" style="flex:1">Enregistrer</button><button class="btn ghost" data-act="aitest" style="flex:1">Tester</button></div></div>`; }
   if (t === 'admin') { const c = AI(); const a = (u, l) => `<a class="btn sm ghost" href="${u}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;margin:2px 4px 2px 0">${l}</a>`;
     body = `<div class="card"><h2>Espace administrateur</h2>
@@ -1551,6 +1561,28 @@ const ACT = {
   aipuces: async (v, el) => { const cv = curCV(), e = cv && cv.data.experiences.find(x => x.id === el.dataset.i); if (!e) return; if (!(e.desc || '').trim()) { toast('Écris d’abord quelques missions, même brutes'); return; } const r = await aiCall('puces', { poste: e.poste, entreprise: e.entreprise, text: e.desc }); if (r) aiSheet('Puces proposées', r.text, t => { e.desc = t; touch(cv); closeSheet(); render(); toast('Missions remplacées'); }, e.desc); },
   ailettre: async () => { const o = ui.offre, cv = S.cvs.find(c => c.id === o.cvId); if (!cv || !o.text.trim()) { toast('Colle d’abord l’annonce'); return; } const r = await aiCall('lettre', { poste: o.poste, entreprise: o.entreprise, annonce: o.text, cv: cvPlain(cv) }); if (r) aiSheet('Lettre de motivation', r.text, null, null, 'lettre'); },
   aientretien: async () => { const o = ui.offre, cv = S.cvs.find(c => c.id === o.cvId); if (!cv || !o.text.trim()) { toast('Colle d’abord l’annonce'); return; } const r = await aiCall('entretien', { poste: o.poste, entreprise: o.entreprise, annonce: o.text, cv: cvPlain(cv) }); if (r) aiSheet('Préparer l’entretien', r.text, null, null, 'entretien'); },
+  aieye: () => { const i = $('#aitIn'); if (i) i.type = i.type === 'password' ? 'text' : 'password'; },
+  aipickon: () => {
+    const ta = $('#aiTxt'), pk = $('#aiPk'); if (!ta || !pk) return;
+    if (ui.aiPick) { ui.aiPick = false; pk.hidden = true; ta.hidden = false; return; }
+    ui.aiPick = true; ui.aiSent = (ta.value.match(/[^.!?\n]+[.!?…]*/g) || []).map(x => x.trim()).filter(Boolean);
+    ta.hidden = true; pk.hidden = false; aiPickDraw(); },
+  aipick: (v, el) => { const n = +el.dataset.n; if (ui.aiSel.has(n)) ui.aiSel.delete(n); else ui.aiSel.add(n); aiPickDraw(); },
+  aimark: () => { const ta = $('#aiTxt'); if (!ta) return; const t = ta.value.slice(ta.selectionStart, ta.selectionEnd).trim(); if (!t) { toast('Sélectionne d’abord un mot ou une phrase dans le texte'); return; } if (!ui.aiMarks.includes(t)) ui.aiMarks.push(t); aiMkDraw(); },
+  aimkdel: (v, el) => { ui.aiMarks.splice(+el.dataset.n, 1); aiMkDraw(); },
+  airegen: async () => {
+    const R = ui.aiRes; if (!R || !R.req) return; const ta = $('#aiTxt'); const cur = ta ? ta.value.trim() : '';
+    const pass = [...[...ui.aiSel].sort((a, b) => a - b).map(n => ui.aiSent[n]), ...ui.aiMarks].filter(Boolean);
+    const ins = (($('#aiIns') || {}).value || '').trim();
+    let c = '\n\nRETOUCHE DEMANDÉE. Voici la version précédente que tu as écrite :\n«' + cur + '»\n';
+    c += pass.length ? 'Réécris le texte COMPLET en changeant uniquement ces passages que je n’aime pas : ' + pass.map(x => '« ' + x + ' »').join(' ; ') + '. Garde tout le reste identique.' : 'Propose une version nettement différente (autres formulations et autre structure), avec les mêmes faits.';
+    if (ins) c += ' Consigne supplémentaire : ' + ins + '.';
+    c += ' Respecte toujours le format et les règles demandés au départ.';
+    const fld = { puces: 'text', style: 'desc' }[R.req.task] || 'cv', input = { ...R.req.input }; input[fld] = (input[fld] || '') + c;
+    const r = await aiCall(R.req.task, input); if (!r) return;
+    const keep = [...R.hist, cur], base = R.req;
+    ui.aiRes.keep = keep; aiSheet(R.title, r.text, R.apply, R.old, R.kind); ui.aiRes.req = base; ui.aiRes.hist = keep; ui.aiRes.keep = null; refreshBack(); },
+  aiback: () => { const R = ui.aiRes; if (!R || !R.hist.length) return; const t = R.hist.pop(), keep = R.hist.slice(), base = R.req; ui.aiRes.keep = keep; aiSheet(R.title, t, R.apply, R.old, R.kind); ui.aiRes.req = base; ui.aiRes.hist = keep; ui.aiRes.keep = null; },
   aiuse: () => { const t = ($('#aiTxt') || {}).value || ''; if (ui.aiRes && ui.aiRes.apply && t.trim()) ui.aiRes.apply(t.trim()); },
   aicopy: () => { const t = ($('#aiTxt') || {}).value || ''; navigator.clipboard?.writeText(t).then(() => toast('Texte copié'), () => toast('Copie impossible : sélectionne le texte')); },
   offhelp: () => { ui.tab = 'guide'; ui.gcat = 'offre'; render(); scrollTo(0, 0); },
