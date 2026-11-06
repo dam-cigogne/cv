@@ -427,3 +427,9 @@ body.demo #cmp{top:calc(30px + env(safe-area-inset-top,0px))}
 .aipk .sn.on{background:#fbd5d5;color:#a11;text-decoration:line-through}
 .aire .mk{display:inline-block;background:#fbd5d5;color:#a11;border-radius:10px;padding:1px 8px;margin:2px;cursor:pointer}
 [hidden]{display:none!important}
+
+.seg2{display:flex;gap:4px;background:rgba(0,0,0,.06);border-radius:10px;padding:3px}
+.seg2 button{flex:1;border:0;background:transparent;border-radius:8px;padding:7px 4px;font:inherit;font-weight:600;color:inherit;cursor:pointer}
+.seg2 button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.aire textarea.ins{width:100%;box-sizing:border-box;-webkit-user-select:text;user-select:text;font:inherit;padding:8px;border-radius:10px;border:1px solid rgba(0,0,0,.2)}
+.aire .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}

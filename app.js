@@ -23,8 +23,9 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.9.9';
+const APP_VERSION = '1.9.10';
 const CHANGELOG = [
+  { v: '1.9.10', d: '06/11/2026', l: ['IA : la retouche a deux onglets (Passages à changer / Consigne). La consigne est un grand champ où coller du texte, avec un bouton « Ajouter la sélection » et des raccourcis (plus court, plus direct…)'] },
   { v: '1.9.9', d: '06/11/2026', l: ['Réglages > IA : bouton pour afficher le mot de passe', 'IA : régénérer un texte autant de fois que tu veux, choisir les phrases ou mots à changer, ajouter une consigne, revenir à la version précédente'] },
   { v: '1.9.8', d: '04/11/2026', l: ['Import PDF : fonctionne maintenant aussi sur les vieux Mac / navigateurs anciens (lecteur PDF de secours) et message d’erreur plus précis'] },
   { v: '1.9.7', d: '03/11/2026', l: ['Correction : le texte du CV ne dépasse plus de la page avec la police Montserrat (la mise en page est recalculée quand la police est chargée)'] },
@@ -528,10 +529,14 @@ function aiSheet(title, text, apply, old, kind) {
    ${cmp ? `<div class="aicmp"><div class="col"><b>Avant (ton texte actuel)</b><div class="old">${esc(old.trim())}</div></div><div class="col"><b>Proposé par l’IA (modifiable)</b><textarea id="aiTxt" rows="12">${esc(text)}</textarea></div></div>` : `<textarea id="aiTxt" rows="12">${esc(text)}</textarea>`}
    <div id="aiPk" class="aipk" hidden></div>
    <div class="row2">${apply ? `<button class="btn" data-act="aiuse" style="flex:1">Utiliser ce texte</button>` : ''}<button class="btn ghost" data-act="aicopy" style="flex:1">Copier</button></div>
-   ${ui.aiRes.req ? `<div class="aire"><div class="small"><b>Pas encore ça ?</b> Choisis ce que tu n’aimes pas, puis régénère (autant de fois que tu veux).</div>
-   <div class="row2"><button class="btn sm ghost" data-act="aipickon" style="flex:1">👆 Choisir des phrases</button><button class="btn sm ghost" data-act="aimark" style="flex:1">🚫 Marquer la sélection</button></div>
-   <div id="aiMk" class="small muted"></div>
-   <input id="aiIns" class="ins" placeholder="Consigne (facultatif) : plus court, plus direct, ton plus chaleureux…" autocapitalize="off">
+   ${ui.aiRes.req ? `<div class="aire"><div class="small"><b>Pas encore ça ?</b> Dis ce qui ne va pas, puis régénère (autant de fois que tu veux).</div>
+   <div class="seg2"><button class="on" data-act="aitab" data-v="p">Passages à changer</button><button data-act="aitab" data-v="c">Consigne</button></div>
+   <div id="aiTabP"><div class="row2"><button class="btn sm ghost" data-act="aipickon" style="flex:1">👆 Choisir des phrases</button><button class="btn sm ghost" data-act="aimark" style="flex:1">🚫 Marquer la sélection</button></div>
+   <div class="small muted">Astuce : sélectionne un mot ou une phrase dans le texte proposé, puis touche « Marquer la sélection ».</div>
+   <div id="aiMk" class="small muted"></div></div>
+   <div id="aiTabC" hidden><textarea id="aiIns" class="ins" rows="4" placeholder="Écris ou colle ici ce que l’IA doit faire : « enlève la phrase sur… », « plus court », « ajoute que… »" autocapitalize="off"></textarea>
+   <div class="row2"><button class="btn sm ghost" data-act="aiinsel" style="flex:1">⬇️ Ajouter la sélection du texte</button><button class="btn sm ghost" data-act="aiinsclr" style="flex:0 0 auto">Effacer</button></div>
+   <div class="chips">${['Plus court', 'Plus direct', 'Plus chaleureux', 'Moins formel', 'Plus précis', 'Sans répétitions'].map(x => `<button class="chip" data-act="aiinschip" data-t="${x}">${x}</button>`).join('')}</div></div>
    <div class="row2"><button class="btn" data-act="airegen" style="flex:1">🔄 Régénérer</button>${ui.aiRes.hist.length ? '<button class="btn ghost" data-act="aiback" style="flex:1">↶ Version précédente</button>' : ''}</div></div>` : ''}
    ${kind ? `<button class="btn ${apply ? 'ghost' : ''}" data-act="aisavejob">💾 Enregistrer dans la candidature</button><div class="small muted">Elle sera retrouvée dans l’onglet Suivi, en ouvrant la candidature. Si elle n’existe pas encore, elle est créée.</div>` : ''}`);
   const sh = $('#sheet'); if (sh) sh.classList.toggle('wide', !!cmp);
@@ -1561,6 +1566,10 @@ const ACT = {
   aipuces: async (v, el) => { const cv = curCV(), e = cv && cv.data.experiences.find(x => x.id === el.dataset.i); if (!e) return; if (!(e.desc || '').trim()) { toast('Écris d’abord quelques missions, même brutes'); return; } const r = await aiCall('puces', { poste: e.poste, entreprise: e.entreprise, text: e.desc }); if (r) aiSheet('Puces proposées', r.text, t => { e.desc = t; touch(cv); closeSheet(); render(); toast('Missions remplacées'); }, e.desc); },
   ailettre: async () => { const o = ui.offre, cv = S.cvs.find(c => c.id === o.cvId); if (!cv || !o.text.trim()) { toast('Colle d’abord l’annonce'); return; } const r = await aiCall('lettre', { poste: o.poste, entreprise: o.entreprise, annonce: o.text, cv: cvPlain(cv) }); if (r) aiSheet('Lettre de motivation', r.text, null, null, 'lettre'); },
   aientretien: async () => { const o = ui.offre, cv = S.cvs.find(c => c.id === o.cvId); if (!cv || !o.text.trim()) { toast('Colle d’abord l’annonce'); return; } const r = await aiCall('entretien', { poste: o.poste, entreprise: o.entreprise, annonce: o.text, cv: cvPlain(cv) }); if (r) aiSheet('Préparer l’entretien', r.text, null, null, 'entretien'); },
+  aitab: (v, el) => { const c = el.dataset.v === 'c'; const P = $('#aiTabP'), C = $('#aiTabC'); if (P) P.hidden = c; if (C) C.hidden = !c; document.querySelectorAll('.seg2 button').forEach(b => b.classList.toggle('on', b === el)); if (c) { const i = $('#aiIns'); if (i) i.focus(); } },
+  aiinsel: () => { const ta = $('#aiTxt'), i = $('#aiIns'); if (!ta || !i) return; const t = ta.value.slice(ta.selectionStart, ta.selectionEnd).trim(); if (!t) { toast('Sélectionne d’abord un mot ou une phrase dans le texte proposé'); return; } i.value = (i.value.trim() ? i.value.trim() + '\n' : '') + 'À changer : « ' + t + ' » → '; i.focus(); },
+  aiinsclr: () => { const i = $('#aiIns'); if (i) { i.value = ''; i.focus(); } },
+  aiinschip: (v, el) => { const i = $('#aiIns'); if (!i) return; i.value = (i.value.trim() ? i.value.trim() + '. ' : '') + el.dataset.t + '.'; },
   aieye: () => { const i = $('#aitIn'); if (i) i.type = i.type === 'password' ? 'text' : 'password'; },
   aipickon: () => {
     const ta = $('#aiTxt'), pk = $('#aiPk'); if (!ta || !pk) return;
