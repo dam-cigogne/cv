@@ -23,8 +23,9 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.9.10';
+const APP_VERSION = '1.9.11';
 const CHANGELOG = [
+  { v: '1.9.11', d: '06/11/2026', l: ['IA : on peut aussi choisir des mots (pas seulement des phrases) à changer dans la retouche'] },
   { v: '1.9.10', d: '06/11/2026', l: ['IA : la retouche a deux onglets (Passages à changer / Consigne). La consigne est un grand champ où coller du texte, avec un bouton « Ajouter la sélection » et des raccourcis (plus court, plus direct…)'] },
   { v: '1.9.9', d: '06/11/2026', l: ['Réglages > IA : bouton pour afficher le mot de passe', 'IA : régénérer un texte autant de fois que tu veux, choisir les phrases ou mots à changer, ajouter une consigne, revenir à la version précédente'] },
   { v: '1.9.8', d: '04/11/2026', l: ['Import PDF : fonctionne maintenant aussi sur les vieux Mac / navigateurs anciens (lecteur PDF de secours) et message d’erreur plus précis'] },
@@ -518,12 +519,15 @@ async function aiCall(task, input) {
   } catch (e) { toast('Connexion impossible : vérifie l’adresse du relais'); return null; }
   finally { ui.aiBusy = false; }
 }
-function aiPickDraw() { const pk = $('#aiPk'); if (!pk) return; pk.innerHTML = '<div class="small muted">Touche les phrases à changer (elles passent en rouge), puis « Régénérer ».</div>' + ui.aiSent.map((x, n) => `<span class="sn${ui.aiSel.has(n) ? ' on' : ''}" data-act="aipick" data-n="${n}">${esc(x)}</span>`).join(' ') + '<div><button class="btn sm ghost" data-act="aipickon">✏️ Revenir au texte</button></div>'; aiMkDraw(); }
-function aiMkDraw() { const m = $('#aiMk'); if (!m) return; const k = ui.aiSel.size + ui.aiMarks.length; m.innerHTML = (ui.aiMarks.length ? 'Marqués : ' + ui.aiMarks.map((x, n) => `<span class="mk" data-act="aimkdel" data-n="${n}">${esc(x.length > 40 ? x.slice(0, 40) + '…' : x)} ✕</span>`).join(' ') + '<br>' : '') + (k ? k + ' passage' + (k > 1 ? 's' : '') + ' à changer' : 'Rien de marqué : une version différente sera proposée'); }
+function aiWordGroups() { const w = [...ui.aiSelW].sort((x, y) => x - y), g = []; let cur = []; w.forEach((n, i) => { if (i && n !== w[i - 1] + 1) { g.push(cur.join(' ')); cur = []; } cur.push(ui.aiWords[n]); }); if (cur.length) g.push(cur.join(' ')); return g; }
+function aiPickDraw() { const pk = $('#aiPk'); if (!pk) return; const mot = ui.aiMode === 'mot';
+  pk.innerHTML = `<div class="seg2"><button class="${mot ? '' : 'on'}" data-act="aimode" data-v="phr">Phrases</button><button class="${mot ? 'on' : ''}" data-act="aimode" data-v="mot">Mots</button></div><div class="small muted">Touche ${mot ? 'les mots' : 'les phrases'} à changer (ils passent en rouge), puis « Régénérer ».</div>` +
+  (mot ? ui.aiWords.map((x, n) => `<span class="sn${ui.aiSelW.has(n) ? ' on' : ''}" data-act="aipickw" data-n="${n}">${esc(x)}</span>`).join(' ') : ui.aiSent.map((x, n) => `<span class="sn${ui.aiSel.has(n) ? ' on' : ''}" data-act="aipick" data-n="${n}">${esc(x)}</span>`).join(' ')) + '<div><button class="btn sm ghost" data-act="aipickon">✏️ Revenir au texte</button></div>'; aiMkDraw(); }
+function aiMkDraw() { const m = $('#aiMk'); if (!m) return; const k = ui.aiSel.size + aiWordGroups().length + ui.aiMarks.length; m.innerHTML = (ui.aiMarks.length ? 'Marqués : ' + ui.aiMarks.map((x, n) => `<span class="mk" data-act="aimkdel" data-n="${n}">${esc(x.length > 40 ? x.slice(0, 40) + '…' : x)} ✕</span>`).join(' ') + '<br>' : '') + (k ? k + ' passage' + (k > 1 ? 's' : '') + ' à changer' : 'Rien de marqué : une version différente sera proposée'); }
 function refreshBack() {}
 function aiSheet(title, text, apply, old, kind) {
   const cmp = typeof old === 'string' && old.trim();
-  ui.aiRes = { apply, kind, title, old, req: ui.aiReq, hist: ((ui.aiRes && ui.aiRes.keep) || []), keep: null }; ui.aiSel = new Set(); ui.aiMarks = []; ui.aiPick = false;
+  ui.aiRes = { apply, kind, title, old, req: ui.aiReq, hist: ((ui.aiRes && ui.aiRes.keep) || []), keep: null }; ui.aiSel = new Set(); ui.aiSelW = new Set(); ui.aiMode = 'phr'; ui.aiMarks = []; ui.aiPick = false;
   openSheet(`<div class="sh"><h2>${esc(title)}</h2><button class="ib" data-act="closesheet">✕</button></div>
    <div class="small muted">${ui.aiLast ? 'Écrit par ' + (ui.aiLast.provider === 'claude' ? 'Claude' : 'l’IA gratuite') + '. ' : ''}Relis et corrige avant d’utiliser : l’IA peut se tromper et ne connaît que ton CV.</div>
    ${cmp ? `<div class="aicmp"><div class="col"><b>Avant (ton texte actuel)</b><div class="old">${esc(old.trim())}</div></div><div class="col"><b>Proposé par l’IA (modifiable)</b><textarea id="aiTxt" rows="12">${esc(text)}</textarea></div></div>` : `<textarea id="aiTxt" rows="12">${esc(text)}</textarea>`}
@@ -531,7 +535,7 @@ function aiSheet(title, text, apply, old, kind) {
    <div class="row2">${apply ? `<button class="btn" data-act="aiuse" style="flex:1">Utiliser ce texte</button>` : ''}<button class="btn ghost" data-act="aicopy" style="flex:1">Copier</button></div>
    ${ui.aiRes.req ? `<div class="aire"><div class="small"><b>Pas encore ça ?</b> Dis ce qui ne va pas, puis régénère (autant de fois que tu veux).</div>
    <div class="seg2"><button class="on" data-act="aitab" data-v="p">Passages à changer</button><button data-act="aitab" data-v="c">Consigne</button></div>
-   <div id="aiTabP"><div class="row2"><button class="btn sm ghost" data-act="aipickon" style="flex:1">👆 Choisir des phrases</button><button class="btn sm ghost" data-act="aimark" style="flex:1">🚫 Marquer la sélection</button></div>
+   <div id="aiTabP"><div class="row2"><button class="btn sm ghost" data-act="aipickon" style="flex:1">👆 Choisir phrases / mots</button><button class="btn sm ghost" data-act="aimark" style="flex:1">🚫 Marquer la sélection</button></div>
    <div class="small muted">Astuce : sélectionne un mot ou une phrase dans le texte proposé, puis touche « Marquer la sélection ».</div>
    <div id="aiMk" class="small muted"></div></div>
    <div id="aiTabC" hidden><textarea id="aiIns" class="ins" rows="4" placeholder="Écris ou colle ici ce que l’IA doit faire : « enlève la phrase sur… », « plus court », « ajoute que… »" autocapitalize="off"></textarea>
@@ -1566,7 +1570,7 @@ const ACT = {
   aipuces: async (v, el) => { const cv = curCV(), e = cv && cv.data.experiences.find(x => x.id === el.dataset.i); if (!e) return; if (!(e.desc || '').trim()) { toast('Écris d’abord quelques missions, même brutes'); return; } const r = await aiCall('puces', { poste: e.poste, entreprise: e.entreprise, text: e.desc }); if (r) aiSheet('Puces proposées', r.text, t => { e.desc = t; touch(cv); closeSheet(); render(); toast('Missions remplacées'); }, e.desc); },
   ailettre: async () => { const o = ui.offre, cv = S.cvs.find(c => c.id === o.cvId); if (!cv || !o.text.trim()) { toast('Colle d’abord l’annonce'); return; } const r = await aiCall('lettre', { poste: o.poste, entreprise: o.entreprise, annonce: o.text, cv: cvPlain(cv) }); if (r) aiSheet('Lettre de motivation', r.text, null, null, 'lettre'); },
   aientretien: async () => { const o = ui.offre, cv = S.cvs.find(c => c.id === o.cvId); if (!cv || !o.text.trim()) { toast('Colle d’abord l’annonce'); return; } const r = await aiCall('entretien', { poste: o.poste, entreprise: o.entreprise, annonce: o.text, cv: cvPlain(cv) }); if (r) aiSheet('Préparer l’entretien', r.text, null, null, 'entretien'); },
-  aitab: (v, el) => { const c = el.dataset.v === 'c'; const P = $('#aiTabP'), C = $('#aiTabC'); if (P) P.hidden = c; if (C) C.hidden = !c; document.querySelectorAll('.seg2 button').forEach(b => b.classList.toggle('on', b === el)); if (c) { const i = $('#aiIns'); if (i) i.focus(); } },
+  aitab: (v, el) => { const c = el.dataset.v === 'c'; const P = $('#aiTabP'), C = $('#aiTabC'); if (P) P.hidden = c; if (C) C.hidden = !c; el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); if (c) { const i = $('#aiIns'); if (i) i.focus(); } },
   aiinsel: () => { const ta = $('#aiTxt'), i = $('#aiIns'); if (!ta || !i) return; const t = ta.value.slice(ta.selectionStart, ta.selectionEnd).trim(); if (!t) { toast('Sélectionne d’abord un mot ou une phrase dans le texte proposé'); return; } i.value = (i.value.trim() ? i.value.trim() + '\n' : '') + 'À changer : « ' + t + ' » → '; i.focus(); },
   aiinsclr: () => { const i = $('#aiIns'); if (i) { i.value = ''; i.focus(); } },
   aiinschip: (v, el) => { const i = $('#aiIns'); if (!i) return; i.value = (i.value.trim() ? i.value.trim() + '. ' : '') + el.dataset.t + '.'; },
@@ -1574,14 +1578,16 @@ const ACT = {
   aipickon: () => {
     const ta = $('#aiTxt'), pk = $('#aiPk'); if (!ta || !pk) return;
     if (ui.aiPick) { ui.aiPick = false; pk.hidden = true; ta.hidden = false; return; }
-    ui.aiPick = true; ui.aiSent = (ta.value.match(/[^.!?\n]+[.!?…]*/g) || []).map(x => x.trim()).filter(Boolean);
+    ui.aiPick = true; ui.aiSent = (ta.value.match(/[^.!?\n]+[.!?…]*/g) || []).map(x => x.trim()).filter(Boolean); ui.aiWords = ta.value.split(/\s+/).filter(Boolean); ui.aiSel = new Set(); ui.aiSelW = new Set();
     ta.hidden = true; pk.hidden = false; aiPickDraw(); },
+  aimode: (v, el) => { ui.aiMode = el.dataset.v; aiPickDraw(); },
+  aipickw: (v, el) => { const n = +el.dataset.n; if (ui.aiSelW.has(n)) ui.aiSelW.delete(n); else ui.aiSelW.add(n); aiPickDraw(); },
   aipick: (v, el) => { const n = +el.dataset.n; if (ui.aiSel.has(n)) ui.aiSel.delete(n); else ui.aiSel.add(n); aiPickDraw(); },
   aimark: () => { const ta = $('#aiTxt'); if (!ta) return; const t = ta.value.slice(ta.selectionStart, ta.selectionEnd).trim(); if (!t) { toast('Sélectionne d’abord un mot ou une phrase dans le texte'); return; } if (!ui.aiMarks.includes(t)) ui.aiMarks.push(t); aiMkDraw(); },
   aimkdel: (v, el) => { ui.aiMarks.splice(+el.dataset.n, 1); aiMkDraw(); },
   airegen: async () => {
     const R = ui.aiRes; if (!R || !R.req) return; const ta = $('#aiTxt'); const cur = ta ? ta.value.trim() : '';
-    const pass = [...[...ui.aiSel].sort((a, b) => a - b).map(n => ui.aiSent[n]), ...ui.aiMarks].filter(Boolean);
+    const pass = [...[...ui.aiSel].sort((a, b) => a - b).map(n => ui.aiSent[n]), ...aiWordGroups(), ...ui.aiMarks].filter(Boolean);
     const ins = (($('#aiIns') || {}).value || '').trim();
     let c = '\n\nRETOUCHE DEMANDÉE. Voici la version précédente que tu as écrite :\n«' + cur + '»\n';
     c += pass.length ? 'Réécris le texte COMPLET en changeant uniquement ces passages que je n’aime pas : ' + pass.map(x => '« ' + x + ' »').join(' ; ') + '. Garde tout le reste identique.' : 'Propose une version nettement différente (autres formulations et autre structure), avec les mêmes faits.';
