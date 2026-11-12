@@ -23,8 +23,9 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.9.11';
+const APP_VERSION = '1.10.0';
 const CHANGELOG = [
+  { v: '1.10.0', d: '12/11/2026', l: ['IA partout : bouton « ✨ Aide IA » sur le profil, les missions, les formations, les domaines de compétences et les centres d’intérêt (reformuler, corriger, raccourcir, développer, plus pro, idées à ajouter, m’expliquer, ou ta propre demande)', 'Compétences : « ✨ Suggérer des compétences »'] },
   { v: '1.9.11', d: '06/11/2026', l: ['IA : on peut aussi choisir des mots (pas seulement des phrases) à changer dans la retouche'] },
   { v: '1.9.10', d: '06/11/2026', l: ['IA : la retouche a deux onglets (Passages à changer / Consigne). La consigne est un grand champ où coller du texte, avec un bouton « Ajouter la sélection » et des raccourcis (plus court, plus direct…)'] },
   { v: '1.9.9', d: '06/11/2026', l: ['Réglages > IA : bouton pour afficher le mot de passe', 'IA : régénérer un texte autant de fois que tu veux, choisir les phrases ou mots à changer, ajouter une consigne, revenir à la version précédente'] },
@@ -399,6 +400,7 @@ const GUIDE = [
   { c: 'ia', t: 'Activer l’IA (une seule fois)', l: ['Réglages > IA', 'Adresse du relais : déjà remplie (https://cv-ia.dam-cigogne.workers.dev)', 'Mot de passe du relais : celui du secret APP_TOKEN créé sur Cloudflare. Note-le dans ton gestionnaire de mots de passe', 'Touche « Enregistrer », puis « Tester » : « Connexion OK » doit s’afficher', 'Touche « IA désactivée : touche pour activer » : les boutons ✨ apparaissent dans l’appli'] },
   { c: 'ia', t: 'Écrire ou améliorer le profil', l: ['Mes CV > ouvre un CV > Infos > carte Profil', 'Touche « ✨ Écrire ou améliorer avec l’IA »', 'Relis le texte proposé et modifie-le au besoin', '« Utiliser ce texte » remplace ton profil ; « Copier » le garde ailleurs', 'Plus ton CV est rempli (titre, expériences), meilleur est le résultat'] },
   { c: 'ia', t: 'Améliorer les puces d’une expérience', l: ['Dans l’éditeur, ouvre une expérience', 'Écris tes missions, même en vrac (une idée par ligne)', 'Touche « ✨ Améliorer les puces avec l’IA »', 'Vérifie chaque ligne : remplace [chiffre à compléter] par un vrai chiffre, ou supprime-le', 'Le bouton « Utiliser ce texte » remplace tes missions'] },
+  { c: 'ia', t: 'Aide IA sur n’importe quelle rubrique', p: 'Reformuler une phrase, corriger, trouver des idées, ou comprendre une notion que tu maîtrises mal.', l: ['Dans l’éditeur, sous le profil, les missions, les formations, les domaines et les centres d’intérêt : touche « ✨ Aide IA » (ou « ✨ Autre aide »)', 'Choisis une action : Reformuler, Corriger, Raccourcir, Développer, Plus professionnel, Idées à ajouter, M’expliquer', 'Ou écris ta demande avec tes mots : « je ne sais pas comment dire que… », « explique-moi ce qu’est… »', 'Dans Compétences : « ✨ Suggérer des compétences » propose des idées à ajouter en un geste', 'Sous chaque proposition : choisis les phrases ou mots à changer et régénère autant de fois que tu veux'] },
   { c: 'ia', t: 'Lettre de motivation et entretien', l: ['Onglet Offre > colle l’annonce (« Coller l’annonce »), choisis le CV à utiliser', 'Renseigne le poste et l’entreprise : la lettre en sera plus précise', 'Touche « Analyser », puis dans la carte « Aide IA » : « ✨ Lettre de motivation » ou « ✨ Préparer l’entretien »', 'Copie le texte, colle-le dans ton mail ou ton traitement de texte et personnalise-le', 'Pour l’entretien : prépare tes réponses à voix haute avec les pistes proposées'] },
   { c: 'ia', t: 'Bien l’utiliser, limites et confidentialité', p: 'L’IA est une aide à la rédaction, pas un verdict.', l: ['Relis toujours : elle peut se tromper ou reformuler de façon trop générale', 'Elle ne connaît que ton CV et l’annonce. Elle a pour consigne de ne rien inventer et marque [chiffre à compléter] quand un chiffre manque', 'N’envoie rien que tu ne veux pas partager : quand tu touches un bouton ✨, le texte concerné part vers ton relais puis vers le modèle d’IA', 'Si l’IA est désactivée, rien ne quitte ton appareil', 'Gratuit dans la limite du quota Cloudflare. Si un message dit que l’IA ne répond pas, réessaie un peu plus tard', 'Claude (payant, plus fin) : choisis « Claude » dans Réglages > IA. Il demande une clé Claude configurée dans Cloudflare et il est réservé au propriétaire du relais'] },
   { c: 'ia', t: 'Voir mon crédit Claude (propriétaire)', p: 'Le crédit Claude se consulte sur console.anthropic.com, pas dans l’appli.', l: ['Ouvre console.anthropic.com et connecte-toi', 'Accueil : solde des crédits ; Facturation (Billing) : détail ; Utilisation : consommation', 'Garde le rechargement automatique désactivé', 'À zéro, Claude renvoie une erreur : repasse sur « Gratuit » dans Réglages > IA', 'Avec ton mot de passe propriétaire, Réglages > Admin donne les liens directs et le mémo des secrets'] },
@@ -525,14 +527,19 @@ function aiPickDraw() { const pk = $('#aiPk'); if (!pk) return; const mot = ui.a
   (mot ? ui.aiWords.map((x, n) => `<span class="sn${ui.aiSelW.has(n) ? ' on' : ''}" data-act="aipickw" data-n="${n}">${esc(x)}</span>`).join(' ') : ui.aiSent.map((x, n) => `<span class="sn${ui.aiSel.has(n) ? ' on' : ''}" data-act="aipick" data-n="${n}">${esc(x)}</span>`).join(' ')) + '<div><button class="btn sm ghost" data-act="aipickon">✏️ Revenir au texte</button></div>'; aiMkDraw(); }
 function aiMkDraw() { const m = $('#aiMk'); if (!m) return; const k = ui.aiSel.size + aiWordGroups().length + ui.aiMarks.length; m.innerHTML = (ui.aiMarks.length ? 'Marqués : ' + ui.aiMarks.map((x, n) => `<span class="mk" data-act="aimkdel" data-n="${n}">${esc(x.length > 40 ? x.slice(0, 40) + '…' : x)} ✕</span>`).join(' ') + '<br>' : '') + (k ? k + ' passage' + (k > 1 ? 's' : '') + ' à changer' : 'Rien de marqué : une version différente sera proposée'); }
 function refreshBack() {}
-function aiSheet(title, text, apply, old, kind) {
+/* ---- aide IA sur n'importe quelle rubrique texte ---- */
+const AIMODES = [['reformuler', 'Reformuler'], ['corriger', 'Corriger les fautes'], ['raccourcir', 'Raccourcir'], ['developper', 'Développer'], ['pro', 'Plus professionnel'], ['idees', 'Idées à ajouter'], ['expliquer', 'M’expliquer']];
+const aiBtn = (attrs, name, label) => aiOn() ? `<button class="btn sm ghost" data-act="aitxt" ${attrs} data-n="${esc(name)}">${label || '✨ Aide IA'}</button>` : '';
+function aiField(d) { const cv = curCV(); if (!cv) return ''; if (d.p) return String(d.p.split('.').reduce((o, k) => o && o[k], cv) || ''); const it = d.l && cv.data[d.l].find(x => x.id === d.i); return it ? String(it[d.k] || '') : ''; }
+function aiSetField(d, v) { const cv = curCV(); if (!cv) return; if (d.p) setPath(cv, d.p, v); else { const it = cv.data[d.l].find(x => x.id === d.i); if (it) it[d.k] = v; } touch(cv); closeSheet(); render(); }
+function aiSheet(title, text, apply, old, kind, extra, useLabel) {
   const cmp = typeof old === 'string' && old.trim();
-  ui.aiRes = { apply, kind, title, old, req: ui.aiReq, hist: ((ui.aiRes && ui.aiRes.keep) || []), keep: null }; ui.aiSel = new Set(); ui.aiSelW = new Set(); ui.aiMode = 'phr'; ui.aiMarks = []; ui.aiPick = false;
+  ui.aiRes = { apply, kind, title, old, extra, useLabel, req: ui.aiReq, hist: ((ui.aiRes && ui.aiRes.keep) || []), keep: null }; ui.aiSel = new Set(); ui.aiSelW = new Set(); ui.aiMode = 'phr'; ui.aiMarks = []; ui.aiPick = false;
   openSheet(`<div class="sh"><h2>${esc(title)}</h2><button class="ib" data-act="closesheet">✕</button></div>
    <div class="small muted">${ui.aiLast ? 'Écrit par ' + (ui.aiLast.provider === 'claude' ? 'Claude' : 'l’IA gratuite') + '. ' : ''}Relis et corrige avant d’utiliser : l’IA peut se tromper et ne connaît que ton CV.</div>
    ${cmp ? `<div class="aicmp"><div class="col"><b>Avant (ton texte actuel)</b><div class="old">${esc(old.trim())}</div></div><div class="col"><b>Proposé par l’IA (modifiable)</b><textarea id="aiTxt" rows="12">${esc(text)}</textarea></div></div>` : `<textarea id="aiTxt" rows="12">${esc(text)}</textarea>`}
    <div id="aiPk" class="aipk" hidden></div>
-   <div class="row2">${apply ? `<button class="btn" data-act="aiuse" style="flex:1">Utiliser ce texte</button>` : ''}<button class="btn ghost" data-act="aicopy" style="flex:1">Copier</button></div>
+   <div class="row2">${apply ? `<button class="btn" data-act="aiuse" style="flex:1">${esc(useLabel || 'Utiliser ce texte')}</button>` : ''}${extra ? `<button class="btn ghost" data-act="aiextra" style="flex:1">${esc(extra.label)}</button>` : ''}<button class="btn ghost" data-act="aicopy" style="flex:1">Copier</button></div>
    ${ui.aiRes.req ? `<div class="aire"><div class="small"><b>Pas encore ça ?</b> Dis ce qui ne va pas, puis régénère (autant de fois que tu veux).</div>
    <div class="seg2"><button class="on" data-act="aitab" data-v="p">Passages à changer</button><button data-act="aitab" data-v="c">Consigne</button></div>
    <div id="aiTabP"><div class="row2"><button class="btn sm ghost" data-act="aipickon" style="flex:1">👆 Choisir phrases / mots</button><button class="btn sm ghost" data-act="aimark" style="flex:1">🚫 Marquer la sélection</button></div>
@@ -672,7 +679,7 @@ function edInfos(cv) {
    <div class="grid2">${fld(cv, 'LinkedIn', 'data.identity.linkedin', 'linkedin.com/in/…')}${fld(cv, 'Site / portfolio', 'data.identity.site', 'https://…')}</div>
    ${fld(cv, 'Âge / naissance (facultatif)', 'data.identity.naissance', '')}</div>
    <div class="card"><h2>Profil</h2><div class="small muted">2–3 lignes : qui tu es, ce que tu apportes, ce que tu cherches.</div>
-   <label class="f"><textarea data-p="data.resume" rows="5">${esc(cv.data.resume)}</textarea></label>${aiOn() ? '<button class="btn sm ghost" data-act="aiprofil">✨ Écrire ou améliorer avec l’IA</button>' : ''}</div>`;
+   <label class="f"><textarea data-p="data.resume" rows="5">${esc(cv.data.resume)}</textarea></label>${aiOn() ? '<div class="chips"><button class="btn sm ghost" data-act="aiprofil">✨ Écrire ou améliorer avec l’IA</button>' + aiBtn('data-p="data.resume"', 'Profil', '✨ Autre aide') + '</div>' : ''}</div>`;
 }
 function itemTools(l, it, idx, len) {
   return `<div class="tools"><label class="swrow" style="gap:8px"><span class="small">Inclure dans ce CV</span><span class="sw"><input type="checkbox" data-l="${l}" data-i="${it.id}" data-k="on" data-r="1" ${it.on !== false ? 'checked' : ''}><i></i></span></label>
@@ -690,7 +697,7 @@ function edParcours(cv) {
    <div class="body">${li('experiences', e, 'poste', 'Poste', 'Ex. Responsable d’équipe')}${li('experiences', e, 'entreprise', 'Entreprise', '')}${li('experiences', e, 'lieu', 'Lieu', '')}
    <div class="grid2">${li('experiences', e, 'debut', 'Début', 'MM/AAAA')}${e.actuel ? '<div></div>' : li('experiences', e, 'fin', 'Fin', 'MM/AAAA')}</div>
    <label class="swrow"><span>Poste actuel</span><span class="sw"><input type="checkbox" data-l="experiences" data-i="${e.id}" data-k="actuel" data-r="1" ${e.actuel ? 'checked' : ''}><i></i></span></label>
-   <label class="f">Missions et résultats (une puce par ligne, commence par « - »)<textarea rows="6" data-l="experiences" data-i="${e.id}" data-k="desc">${esc(e.desc)}</textarea></label>${aiOn() ? `<button class="btn sm ghost" data-act="aipuces" data-i="${e.id}">✨ Améliorer les puces avec l’IA</button>` : ''}
+   <label class="f">Missions et résultats (une puce par ligne, commence par « - »)<textarea rows="6" data-l="experiences" data-i="${e.id}" data-k="desc">${esc(e.desc)}</textarea></label>${aiOn() ? `<button class="btn sm ghost" data-act="aipuces" data-i="${e.id}">✨ Améliorer les puces avec l’IA</button> ${aiBtn(`data-l="experiences" data-i="${e.id}" data-k="desc"`, 'Missions : ' + (e.poste || 'expérience'), '✨ Autre aide')}` : ''}
    ${itemTools('experiences', e, n, L.length)}</div></details>`).join('')}
   <button class="btn" data-act="add" data-l="experiences">+ Ajouter une expérience</button>`;
 }
@@ -699,16 +706,16 @@ function edFormation(cv) {
   return `${L.map((f, n) => `<details class="item ${f.on === false ? 'off' : ''}" data-d="${f.id}" ${ui.open[f.id] ? 'open' : ''}><summary><div class="st"><b>${esc(f.diplome || 'Nouvelle formation')}</b><span>${esc([f.ecole, [f.debut, f.fin].filter(Boolean).join(' – ')].filter(Boolean).join(' · '))}</span></div>${f.on === false ? '<span class="chip">masquée</span>' : ''}<span class="muted">▾</span></summary>
    <div class="body">${li('formations', f, 'diplome', 'Diplôme / formation', '')}${li('formations', f, 'ecole', 'École / organisme', '')}
    <div class="grid2">${li('formations', f, 'debut', 'Début', 'AAAA')}${li('formations', f, 'fin', 'Fin', 'AAAA')}</div>
-   <label class="f">Détails (facultatif)<textarea rows="3" data-l="formations" data-i="${f.id}" data-k="desc">${esc(f.desc)}</textarea></label>
+   <label class="f">Détails (facultatif)<textarea rows="3" data-l="formations" data-i="${f.id}" data-k="desc">${esc(f.desc)}</textarea></label>${aiBtn(`data-l="formations" data-i="${f.id}" data-k="desc"`, 'Formation : ' + (f.diplome || 'détails'))}
    ${itemTools('formations', f, n, L.length)}</div></details>`).join('')}
   <button class="btn" data-act="add" data-l="formations">+ Ajouter une formation</button>`;
 }
 function edComp(cv) {
   const d = cv.data;
-  return `<div class="card"><h2>Domaines de compétences</h2><div class="small muted">Texte libre : « ## Titre » pour un sous-titre, puis une puce par ligne (« - »). Laisse vide si tu n’en as pas besoin.</div><label class="f"><textarea data-p="data.domaines" rows="10">${esc(cv.data.domaines || '')}</textarea></label></div>
+  return `<div class="card"><h2>Domaines de compétences</h2><div class="small muted">Texte libre : « ## Titre » pour un sous-titre, puis une puce par ligne (« - »). Laisse vide si tu n’en as pas besoin.</div><label class="f"><textarea data-p="data.domaines" rows="10">${esc(cv.data.domaines || '')}</textarea></label>${aiBtn('data-p="data.domaines"', 'Domaines de compétences')}</div>
   <div class="card"><h2>Compétences</h2><div class="small muted">Coche celles à garder dans ce CV. Choisis-les selon l’offre visée.</div>
    <div>${d.competences.map(c => `<div class="skill"><input type="checkbox" data-l="competences" data-i="${c.id}" data-k="on" data-r="1" ${c.on !== false ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--accent)"><input class="t" data-l="competences" data-i="${c.id}" data-k="nom" value="${esc(c.nom)}"><select data-l="competences" data-i="${c.id}" data-k="niveau" data-num="1">${NIV.map((n, v) => `<option value="${v}" ${+c.niveau === v ? 'selected' : ''}>${n}</option>`).join('')}</select><button class="ib sm" data-act="delitem" data-l="competences" data-i="${c.id}">✕</button></div>`).join('')}</div>
-   <div class="row2"><input id="newskill" class="skill-in" placeholder="Ajouter (séparées par des virgules)" style="flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 12px"><button class="btn sm" data-act="addskill">Ajouter</button></div></div>
+   <div class="row2"><input id="newskill" class="skill-in" placeholder="Ajouter (séparées par des virgules)" style="flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 12px"><button class="btn sm" data-act="addskill">Ajouter</button></div>${aiOn() ? '<button class="btn sm ghost" data-act="aicomp">✨ Suggérer des compétences</button>' : ''}</div>
   <div class="card"><h2>Langues</h2>
    ${d.langues.map(c => `<div class="skill"><input type="checkbox" data-l="langues" data-i="${c.id}" data-k="on" data-r="1" ${c.on !== false ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--accent)"><input class="t" data-l="langues" data-i="${c.id}" data-k="nom" value="${esc(c.nom)}" placeholder="Langue"><input class="t" data-l="langues" data-i="${c.id}" data-k="niveau" value="${esc(c.niveau)}" placeholder="Niveau" style="max-width:130px"><button class="ib sm" data-act="delitem" data-l="langues" data-i="${c.id}">✕</button></div>`).join('')}
    <button class="btn sm ghost" data-act="add" data-l="langues">+ Langue</button></div>
@@ -717,7 +724,7 @@ function edComp(cv) {
    <button class="btn sm ghost" data-act="add" data-l="certifs">+ Certification</button></div>`;
 }
 function edPlus(cv) {
-  return `<div class="card"><h2>Centres d’intérêt</h2><div class="small muted">Court et concret : 3 à 5 éléments.</div><label class="f"><textarea data-p="data.loisirs" rows="3">${esc(cv.data.loisirs)}</textarea></label></div>
+  return `<div class="card"><h2>Centres d’intérêt</h2><div class="small muted">Court et concret : 3 à 5 éléments.</div><label class="f"><textarea data-p="data.loisirs" rows="3">${esc(cv.data.loisirs)}</textarea></label>${aiBtn('data-p="data.loisirs"', 'Centres d’intérêt')}</div>
   <div class="card"><h2>Texte non classé</h2><div class="small muted">Lignes de l’import que l’appli n’a pas su placer. Récupère ce qui t’est utile, puis vide la zone. Cette zone n’apparaît pas sur le CV.</div><label class="f"><textarea data-p="data.extra" rows="7">${esc(cv.data.extra)}</textarea></label></div>`;
 }
 function layItem(cv, k, two) {
@@ -1575,6 +1582,35 @@ const ACT = {
   aiinsclr: () => { const i = $('#aiIns'); if (i) { i.value = ''; i.focus(); } },
   aiinschip: (v, el) => { const i = $('#aiIns'); if (!i) return; i.value = (i.value.trim() ? i.value.trim() + '. ' : '') + el.dataset.t + '.'; },
   aieye: () => { const i = $('#aitIn'); if (i) i.type = i.type === 'password' ? 'text' : 'password'; },
+  aitxt: (v, el) => {
+    const d = { p: el.dataset.p, l: el.dataset.l, i: el.dataset.i, k: el.dataset.k, n: el.dataset.n || 'ce texte' }; ui.aiTgt = d;
+    const t = aiField(d).trim();
+    openSheet(`<div class="sh"><h2>✨ Aide IA : ${esc(d.n)}</h2><button class="ib" data-act="closesheet">✕</button></div>
+     <div class="small muted">${t ? 'Texte actuel : « ' + esc(t.length > 140 ? t.slice(0, 140) + '…' : t) + ' »' : 'La rubrique est vide : décris ce que tu veux et l’IA propose un texte.'}</div>
+     <div class="small"><b>Que veux-tu faire ?</b></div>
+     <div class="chips">${AIMODES.map(m => `<button class="chip" data-act="aitxtgo" data-m="${m[0]}">${m[1]}</button>`).join('')}</div>
+     <div class="small"><b>Ou dis-le avec tes mots</b> (facultatif pour les boutons ci-dessus, il les précise)</div>
+     <textarea id="aiAsk" rows="4" placeholder="Ex. : « je ne sais pas comment dire que j’ai encadré 5 personnes », « explique-moi ce qu’est Scrum », « enlève la partie sur… »" autocapitalize="off"></textarea>
+     <button class="btn" data-act="aitxtgo" data-m="aide">✨ Envoyer ma demande</button>
+     <div class="small muted">L’IA ne connaît que ton CV : elle n’invente rien. Relis toujours avant d’utiliser.</div>`);
+  },
+  aitxtgo: async (v, el) => {
+    const d = ui.aiTgt, cv = curCV(); if (!d || !cv) return; const m = el.dataset.m, ask = (($('#aiAsk') || {}).value || '').trim(), t = aiField(d).trim();
+    if (m === 'aide' && !ask) { toast('Écris ta demande dans le cadre'); return; }
+    if (m !== 'aide' && m !== 'idees' && m !== 'expliquer' && !t) { toast('La rubrique est vide : décris ce que tu veux dans le cadre'); return; }
+    if (m === 'expliquer' && !ask && !t) { toast('Écris ce que tu veux comprendre dans le cadre'); return; }
+    const r = await aiCall('texte', { champ: d.n, mode: m, text: t, consigne: ask, titre: cv.data.identity.titre, cv: cvPlain(cv) }); if (!r) return;
+    const title = 'Aide IA : ' + d.n, app = x => aiSetField(d, (t ? t + '\n' : '') + x.trim());
+    if (m === 'expliquer') aiSheet(title, r.text, null);
+    else if (m === 'idees') aiSheet(title, r.text, app, null, null, null, 'Ajouter à la rubrique');
+    else aiSheet(title, r.text, x => aiSetField(d, x.trim()), t, null, t ? { label: 'Ajouter à la suite', fn: app } : null, 'Remplacer');
+  },
+  aiextra: () => { const t = ($('#aiTxt') || {}).value || ''; if (ui.aiRes && ui.aiRes.extra && t.trim()) ui.aiRes.extra.fn(t); },
+  aicomp: async () => {
+    const cv = curCV(); if (!cv) return; const have = cv.data.competences.map(c => c.nom).join(', ');
+    const r = await aiCall('texte', { champ: 'Compétences', mode: 'idees', text: have, consigne: 'Une compétence courte par ligne (2 à 4 mots), sans phrase.', titre: cv.data.identity.titre, cv: cvPlain(cv) }); if (!r) return;
+    aiSheet('Compétences suggérées', r.text, x => { const have2 = new Set(cv.data.competences.map(c => c.nom.toLowerCase())); const names = x.split('\n').map(l => l.replace(/^[\s\-•*\d.)]+/, '').replace(/\[[^\]]*\]/g, '').trim()).filter(n => n && !have2.has(n.toLowerCase())); names.forEach(n => cv.data.competences.push({ id: uid(), on: true, nom: n, niveau: 0 })); touch(cv); closeSheet(); render(); toast(names.length + ' compétence' + (names.length > 1 ? 's ajoutées' : ' ajoutée')); }, null, null, null, 'Ajouter ces compétences');
+  },
   aipickon: () => {
     const ta = $('#aiTxt'), pk = $('#aiPk'); if (!ta || !pk) return;
     if (ui.aiPick) { ui.aiPick = false; pk.hidden = true; ta.hidden = false; return; }
@@ -1596,8 +1632,8 @@ const ACT = {
     const fld = { puces: 'text', style: 'desc' }[R.req.task] || 'cv', input = { ...R.req.input }; input[fld] = (input[fld] || '') + c;
     const r = await aiCall(R.req.task, input); if (!r) return;
     const keep = [...R.hist, cur], base = R.req;
-    ui.aiRes.keep = keep; aiSheet(R.title, r.text, R.apply, R.old, R.kind); ui.aiRes.req = base; ui.aiRes.hist = keep; ui.aiRes.keep = null; refreshBack(); },
-  aiback: () => { const R = ui.aiRes; if (!R || !R.hist.length) return; const t = R.hist.pop(), keep = R.hist.slice(), base = R.req; ui.aiRes.keep = keep; aiSheet(R.title, t, R.apply, R.old, R.kind); ui.aiRes.req = base; ui.aiRes.hist = keep; ui.aiRes.keep = null; },
+    ui.aiRes.keep = keep; aiSheet(R.title, r.text, R.apply, R.old, R.kind, R.extra, R.useLabel); ui.aiRes.req = base; ui.aiRes.hist = keep; ui.aiRes.keep = null; refreshBack(); },
+  aiback: () => { const R = ui.aiRes; if (!R || !R.hist.length) return; const t = R.hist.pop(), keep = R.hist.slice(), base = R.req; ui.aiRes.keep = keep; aiSheet(R.title, t, R.apply, R.old, R.kind, R.extra, R.useLabel); ui.aiRes.req = base; ui.aiRes.hist = keep; ui.aiRes.keep = null; },
   aiuse: () => { const t = ($('#aiTxt') || {}).value || ''; if (ui.aiRes && ui.aiRes.apply && t.trim()) ui.aiRes.apply(t.trim()); },
   aicopy: () => { const t = ($('#aiTxt') || {}).value || ''; navigator.clipboard?.writeText(t).then(() => toast('Texte copié'), () => toast('Copie impossible : sélectionne le texte')); },
   offhelp: () => { ui.tab = 'guide'; ui.gcat = 'offre'; render(); scrollTo(0, 0); },
