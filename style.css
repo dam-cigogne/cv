@@ -433,3 +433,9 @@ body.demo #cmp{top:calc(30px + env(safe-area-inset-top,0px))}
 .seg2 button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.15)}
 .aire textarea.ins{width:100%;box-sizing:border-box;-webkit-user-select:text;user-select:text;font:inherit;padding:8px;border-radius:10px;border:1px solid rgba(0,0,0,.2)}
 .aire .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+/* grands écrans (Mac, PC, tablette paysage) : fenêtre centrée au lieu d'être collée en bas */
+@media (min-width:700px) and (min-height:480px){
+  #sheetbg{align-items:center}
+  #sheet{border-radius:22px;max-height:88vh;padding-bottom:20px}
+  #sheet .grab{display:none}
+}

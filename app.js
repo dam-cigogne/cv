@@ -23,8 +23,9 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.10.0';
+const APP_VERSION = '1.10.1';
 const CHANGELOG = [
+  { v: '1.10.1', d: '12/11/2026', l: ['Sur grand écran (Mac, PC, tablette en paysage), les fenêtres (aide IA, options…) s’ouvrent au centre de l’écran au lieu d’être collées en bas'] },
   { v: '1.10.0', d: '12/11/2026', l: ['IA partout : bouton « ✨ Aide IA » sur le profil, les missions, les formations, les domaines de compétences et les centres d’intérêt (reformuler, corriger, raccourcir, développer, plus pro, idées à ajouter, m’expliquer, ou ta propre demande)', 'Compétences : « ✨ Suggérer des compétences »'] },
   { v: '1.9.11', d: '06/11/2026', l: ['IA : on peut aussi choisir des mots (pas seulement des phrases) à changer dans la retouche'] },
   { v: '1.9.10', d: '06/11/2026', l: ['IA : la retouche a deux onglets (Passages à changer / Consigne). La consigne est un grand champ où coller du texte, avec un bouton « Ajouter la sélection » et des raccourcis (plus court, plus direct…)'] },
