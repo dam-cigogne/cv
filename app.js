@@ -23,8 +23,9 @@ const STATUTS = [['aenvoyer', 'À envoyer'], ['envoyee', 'Envoyée'], ['entretie
 const NIV = ['—', 'Notions', 'Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
 /* ============ version et historique des mises à jour ============ */
-const APP_VERSION = '1.10.1';
+const APP_VERSION = '1.11.0';
 const CHANGELOG = [
+  { v: '1.11.0', d: '19/11/2026', l: ['Nouvel onglet « Salaire » : saisis ton brut mensuel, il est converti en net (privé non-cadre, cadre, fonction publique ou taux perso)', 'Salaire : 13e mois (ou plus), primes mensuelles ou annuelles en brut ou en net, pension (nette ou brute), autres revenus', 'Salaire : avantages (tickets restaurant, transport, intéressement, chèques vacances, heures sup…) à compter ou non dans le total', 'Salaire : total net par mois, par an, et après impôt si tu indiques ton taux de prélèvement', 'Salaire : plusieurs simulations (ta situation, une offre…) et un tableau pour les comparer'] },
   { v: '1.10.1', d: '12/11/2026', l: ['Sur grand écran (Mac, PC, tablette en paysage), les fenêtres (aide IA, options…) s’ouvrent au centre de l’écran au lieu d’être collées en bas'] },
   { v: '1.10.0', d: '12/11/2026', l: ['IA partout : bouton « ✨ Aide IA » sur le profil, les missions, les formations, les domaines de compétences et les centres d’intérêt (reformuler, corriger, raccourcir, développer, plus pro, idées à ajouter, m’expliquer, ou ta propre demande)', 'Compétences : « ✨ Suggérer des compétences »'] },
   { v: '1.9.11', d: '06/11/2026', l: ['IA : on peut aussi choisir des mots (pas seulement des phrases) à changer dans la retouche'] },
@@ -392,6 +393,7 @@ const GUIDE = [
   { c: 'appli', t: 'Exporter, imprimer, partager un CV', l: ['« Aperçu / PDF » : plein écran, zoom + et −', '« Imprimer / PDF » : choisis « Enregistrer en PDF » dans la fenêtre d’impression', '« Copier le texte » ou « Télécharger en texte » (menu ⋯) pour le coller dans un formulaire de candidature', 'Sur iPhone et iPad, le partage ouvre la feuille de partage (Fichiers, AirDrop, Mail…)'] },
   { c: 'appli', t: 'Offre : trouver et adapter', l: ['Métiers qui te correspondent : classés d’après ton CV. Choisis tes domaines dans Réglages > Métiers', 'Trouver des offres : choisis un métier et une ville, un site d’emploi s’ouvre avec la recherche prête. « Gérer les sites » pour en ajouter ou retirer', 'Colle l’annonce (« Coller l’annonce ») puis « Analyser » : mots-clés présents et absents, pourcentage', 'Un mot absent : touche-le pour l’ajouter aux compétences (seulement si tu le maîtrises)', '« Créer la version adaptée » copie ton CV et remonte ce qui répond à l’annonce. L’original ne change pas', '« Ajouter au suivi » enregistre la candidature. Détails dans les rubriques « Onglet Offre » et « Aide IA »'] },
   { c: 'appli', t: 'Suivi des candidatures et agenda', l: ['« + Candidature » : poste, entreprise, CV utilisé, statut, date d’envoi, date de relance, notes, lien et texte de l’offre', 'Statuts : à envoyer, envoyée, entretien, offre reçue, refus. Les filtres en haut ou sur le côté les trient', 'Les relances dépassées ou du jour sont signalées', 'Entretien : renseigne la date, l’heure, la durée et le lieu (ou le lien visio)', '« Relire et analyser l’annonce » dans une candidature compare à nouveau l’annonce avec ton CV', '📅 Agenda : liste les entretiens et relances à venir. Coche ceux à envoyer', 'Vers AgenDam : « Copier le code pour AgenDam », puis dans AgenDam « Coller depuis CV en poche ». Ou « Fichier .ics » pour Apple, Google, Outlook'] },
+  { c: 'appli', t: 'Salaire', p: 'Onglet Salaire : une estimation de ce que tu touches vraiment chaque mois. Tout reste sur ton appareil.', l: ['Brut mensuel : il est converti en net selon ton statut (non-cadre 22 %, cadre 25 %, fonction publique 15 % de cotisations) ou ton propre taux (regarde ta fiche de paie : 100 − net ÷ brut × 100)', 'Mois par an : 13 = un 13e mois. Il est compté en moyenne sur 12 mois dans le total', 'Primes : montant brut ou net, par mois ou par an', 'Pension : montant net (celui versé sur ton compte) ou brut (on retire 9,1 % de CSG, CRDS et CASA au taux plein)', 'Avantages : tickets restaurant (seule la part payée par l’employeur est un gain), transport, intéressement… Coche « Compter dans le total » si tu veux les ajouter', 'Impôt : indique ton taux de prélèvement à la source (sur impots.gouv ou ta fiche de paie) pour voir le net après impôt', 'Plusieurs simulations : « + Nouvelle » ou « Dupliquer » pour comparer ta situation et une offre'] },
   { c: 'appli', t: 'Réglages', l: ['Apparence : thème clair, sombre ou auto, couleur de l’appli, taille du texte, onglets de filtres en haut ou sur le côté', 'Modèles : modèle et couleur par défaut pour les nouveaux CV', 'Métiers : tes domaines, « Montrer uniquement ces domaines », ajout de métiers avec suggestions automatiques', 'Données : sauvegarde, restauration, mode démo, tout effacer', 'IA : adresse du relais, mot de passe, activation', 'Mises à jour : « Vérifier les mises à jour » et « Mettre à jour maintenant ». Le message « Application à jour · version … » confirme que tout est à jour'] },
   { c: 'appli', t: 'Sauvegarder tes données', p: 'Tout est enregistré sur ton appareil. Si tu effaces les données du navigateur ou de l’appli, ou si tu changes de téléphone, tout disparaît : sauvegarde régulièrement.', l: ['Réglages > Données > « Exporter mes données » : crée un fichier de sauvegarde (CV, suivi, réglages)', 'Garde-le dans Fichiers, un cloud ou un mail envoyé à toi-même', '« Importer un fichier » restaure la sauvegarde sur le même appareil ou un nouveau', 'À faire avant : un changement de téléphone, un nettoyage du navigateur, la réinstallation de l’appli'] },
   { c: 'appli', t: 'Mode démo', l: ['Réglages > Données > « Lancer la démo » : un faux CV, de vraies annonces et un suivi pour essayer toutes les fonctions', 'Tes vrais CV sont mis de côté et reviennent intacts quand tu quittes la démo', 'Bouton « Quitter la démo » dans la bannière orange en haut'] },
@@ -458,9 +460,10 @@ const ICONS = {
   offre: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5M8.5 11l2 2 3-3.5"/>',
   suivi: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',
   guide: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',
+  sal: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5a4 4 0 1 0 0 7M7 11h6M7 13.5h6"/>',
   regl: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
 };
-const TABS = [['cv', 'Mes CV'], ['offre', 'Offre'], ['suivi', 'Suivi'], ['guide', 'Guide'], ['regl', 'Réglages']];
+const TABS = [['cv', 'Mes CV'], ['offre', 'Offre'], ['suivi', 'Suivi'], ['sal', 'Salaire'], ['guide', 'Guide'], ['regl', 'Réglages']];
 function renderNav() {
   const nav = $('#nav');
   nav.hidden = !!ui.ed;
@@ -473,7 +476,7 @@ function render() {
   const y = window.scrollY, fs = $('.edform')?.scrollTop || 0, ls = $('#lps')?.scrollTop || 0;
   renderNav(); document.body.classList.toggle('demo', !!S.demo);
   let db = $('#demobar'); if (S.demo) { if (!db) { db = document.createElement('div'); db.id = 'demobar'; document.body.appendChild(db); } db.innerHTML = '<span>Mode démo · données fictives</span><button data-act="demoquit">Quitter la démo</button>'; } else if (db) db.remove();
-  app.innerHTML = ui.ed && curCV() ? viewEditor(curCV()) : ({ cv: tabCV, offre: tabOffre, suivi: tabSuivi, guide: tabGuide, regl: tabRegl }[ui.tab])();
+  app.innerHTML = ui.ed && curCV() ? viewEditor(curCV()) : ({ cv: tabCV, offre: tabOffre, suivi: tabSuivi, sal: tabSal, guide: tabGuide, regl: tabRegl }[ui.tab])();
   window.scrollTo(0, y);
   if (ui.ed && curCV()) {
     const f = $('.edform'); if (f && !ui.resetForm) f.scrollTop = fs; ui.resetForm = 0;
@@ -828,6 +831,145 @@ function jobSheet(j) {
   <div class="row2"><button class="btn" data-act="savejob" style="flex:1">Enregistrer</button>${j.created ? `<button class="btn danger" data-act="deljob" data-id="${j.id}">Supprimer</button>` : ''}${j.url ? `<a class="btn ghost" href="${esc(j.url)}" target="_blank" rel="noopener" style="text-decoration:none;text-align:center">Voir l’annonce</a>` : ''}</div>`);
 }
 const newJob = () => ({ id: uid(), poste: '', entreprise: '', url: '', statut: 'aenvoyer', cvId: S.cvs[0]?.id || '', date: '', relance: '', notes: '', offre: '', created: 0, rdv: '', rdvDur: 60, rdvLieu: '', lettre: '', entretien: '' });
+
+/* ---- onglet Salaire ---- */
+const SALST = [['nc', 'Privé non-cadre', 22], ['c', 'Privé cadre', 25], ['fp', 'Fonction publique', 15], ['perso', 'Mon propre taux', null]];
+const PEN_TX = 9.1;
+const AVTYPES = [
+  ['tr', 'Tickets restaurant'], ['transport', 'Transport (part employeur)'], ['interess', 'Intéressement, participation'], ['chvac', 'Chèques vacances, CSE'],
+  ['hsup', 'Heures supplémentaires'], ['mutuelle', 'Mutuelle (part employeur)'], ['nature', 'Avantage en nature (voiture, logement…)'], ['autre', 'Autre avantage']];
+const AVDEF = { tr: { freq: 'm', inc: true }, transport: { freq: 'm', inc: true }, interess: { freq: 'a', inc: true }, chvac: { freq: 'a', inc: false }, hsup: { freq: 'm', inc: true }, mutuelle: { freq: 'm', inc: false }, nature: { freq: 'm', inc: false }, autre: { freq: 'm', inc: true } };
+const AVHELP = {
+  tr: 'Seule la part payée par l’employeur est un vrai gain (le reste est retenu sur ta paie).',
+  transport: 'L’employeur rembourse au moins 50 % de l’abonnement de transport en commun. Indique le montant remboursé.',
+  interess: 'Montant net reçu sur l’année (variable selon les résultats de l’entreprise).',
+  chvac: 'Valeur offerte sur l’année. Ce n’est pas de l’argent sur ton compte : à toi de voir si tu le comptes.',
+  hsup: 'Montant net moyen par mois (en partie sans impôt dans la limite légale).',
+  mutuelle: 'Part payée par l’employeur. Ce n’est pas de l’argent versé : souvent on ne la compte pas.',
+  nature: 'Valeur de l’avantage. Il augmente ton brut imposable mais ne te verse rien.',
+  autre: '' };
+const num = v => { const n = parseFloat(String(v ?? '').replace(/[\s  ]/g, '').replace(',', '.')); return isFinite(n) ? n : 0; };
+const eur = (n, d = 2) => (Math.round(n * 100) / 100).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d }) + ' €';
+function newSal(nom) { return { id: uid(), nom: nom || 'Ma situation', statut: 'nc', taux: '22', brut: '', mois: '12', primes: [], pension: '', penBrut: false, autres: '', av: [], pas: '' }; }
+function SAL() {
+  if (!S.sal || !Array.isArray(S.sal.list) || !S.sal.list.length) { const f = newSal(); S.sal = { cur: f.id, list: [f] }; }
+  return S.sal;
+}
+const curSal = () => { const s = SAL(); return s.list.find(f => f.id === s.cur) || s.list[0]; };
+function avGain(a) {
+  if (a.type === 'tr') return num(a.jours) * num(a.valeur) * num(a.part) / 100;
+  return num(a.montant);
+}
+function salCalc(f) {
+  const tx = num(f.taux), k = 1 - tx / 100, brut = num(f.brut), mois = num(f.mois) || 12;
+  const salNet = brut * k, extraAn = Math.max(0, mois - 12) * salNet;
+  let pm = 0, pa = 0, pbA = 0;
+  (f.primes || []).forEach(p => { const m = num(p.montant), n = p.type === 'net' ? m : m * k; if (p.freq === 'a') { pa += n; if (p.type !== 'net') pbA += m; } else { pm += n; if (p.type !== 'net') pbA += m * 12; } });
+  const pen = num(f.pension) * (f.penBrut ? 1 - PEN_TX / 100 : 1), aut = num(f.autres);
+  let avIn = 0, avOut = 0; const avL = (f.av || []).map(a => { const g = avGain(a), gm = (a.freq === 'a' && a.type !== 'tr') ? g / 12 : g; if (a.inc) avIn += gm; else avOut += gm; return gm; });
+  const imposable = salNet + extraAn / 12 + pm + pa / 12 + pen;
+  const base = imposable + aut, total = base + avIn, pas = num(f.pas);
+  const impot = imposable * pas / 100;
+  return { tx, salNet, mois, extraAn, extraM: extraAn / 12, pm, pa, pen, aut, avIn, avOut, avL, base, total, impot, apres: total - impot, regulier: salNet + pm + pen + aut, brutAn: brut * mois + pbA, pas };
+}
+function salResHtml(f) {
+  const r = salCalc(f), line = (l, v, sub) => v ? `<div class="salline"><span>${l}${sub ? `<small>${sub}</small>` : ''}</span><b>${eur(v)}</b></div>` : '';
+  const empty = !r.total;
+  return `<div class="lbl">Total net par mois${r.avIn ? ' (avantages compris)' : ''}</div>
+   <div class="big">${eur(r.total, 0)}</div>
+   <div class="sub">${empty ? 'Saisis ton salaire brut, tes primes ou ta pension plus bas.' : `Soit ${eur(r.total * 12, 0)} par an${r.pas ? ` · après impôt (${String(f.pas).replace('.', ',')} %) : <b>${eur(r.apres, 0)}</b> par mois` : ''}`}</div>
+   ${empty ? '' : `<div class="saldet">
+    ${line('Salaire net', r.salNet, `brut ${eur(num(f.brut), 0)} − ${String(r.tx).replace('.', ',')} %`)}
+    ${line(r.mois - 12 === 1 ? '13e mois' : 'Mois en plus (' + String(r.mois).replace('.', ',') + ' mois)', r.extraM, `moyenne par mois · versé ${eur(r.extraAn, 0)} net dans l’année`)}
+    ${line('Primes mensuelles', r.pm)}
+    ${line('Primes annuelles', r.pa / 12, `moyenne par mois · ${eur(r.pa, 0)} net par an`)}
+    ${line('Pension', r.pen, f.penBrut ? `brute ${eur(num(f.pension), 0)} − ${String(PEN_TX).replace('.', ',')} %` : 'nette')}
+    ${line('Autres revenus', r.aut)}
+    ${line('Avantages comptés', r.avIn)}
+    ${r.avOut ? `<div class="salline off"><span>Avantages non comptés<small>pour info, pas dans le total</small></span><b>${eur(r.avOut)}</b></div>` : ''}
+    ${r.extraM || r.pa ? `<div class="salline sep"><span>Versé chaque mois<small>hors 13e mois et primes annuelles</small></span><b>${eur(r.regulier)}</b></div>` : ''}
+    ${r.pas ? `<div class="salline"><span>Impôt prélevé (estimation)<small>sur salaire, primes et pension</small></span><b>− ${eur(r.impot)}</b></div>` : ''}
+    ${r.brutAn ? `<div class="salline"><span>Brut annuel<small>salaire × ${String(r.mois).replace('.', ',')} + primes brutes</small></span><b>${eur(r.brutAn, 0)}</b></div>` : ''}
+   </div>`}`;
+}
+function salCmpHtml() {
+  const L = SAL().list; if (L.length < 2) return '';
+  const R = L.map(f => [f, salCalc(f)]), best = Math.max(...R.map(x => x[1].total));
+  return `<h2>Comparer</h2><div class="saltab">${R.map(([f, r]) => `<button class="salline${f.id === SAL().cur ? ' cur' : ''}" data-act="salsel" data-v="${f.id}"><span>${esc(f.nom || 'Sans nom')}${r.total && r.total === best ? ' <span class="chip ok">le plus</span>' : ''}<small>${r.pas ? 'après impôt ' + eur(r.apres, 0) + ' · ' : ''}${eur(r.total * 12, 0)} par an</small></span><b>${eur(r.total, 0)}</b></button>`).join('')}</div>
+  ${(() => { const c = R.find(x => x[0].id === SAL().cur); if (!c) return ''; return R.filter(x => x[0].id !== c[0].id).map(([f, r]) => { const d = r.total - c[1].total; return d ? `<div class="small muted">« ${esc(f.nom || 'Sans nom')} » : ${d > 0 ? '+' : '−'} ${eur(Math.abs(d), 0)} par mois par rapport à « ${esc(c[0].nom || 'Sans nom')} »</div>` : ''; }).join(''); })()}`;
+}
+function updSal() {
+  const f = curSal(), r = $('#salRes'), c = $('#salCmp'), h = $('#salHint');
+  if (r) r.innerHTML = salResHtml(f);
+  if (c) { c.innerHTML = salCmpHtml(); c.hidden = SAL().list.length < 2; }
+  if (h) { const x = salCalc(f); h.textContent = num(f.brut) ? '≈ ' + eur(x.salNet) + ' net par mois' : ''; }
+  (f.av || []).forEach((a, i) => { const e = $('#avg' + i); if (e && a.type === 'tr') e.textContent = '= ' + eur(avGain(a)) + ' par mois payés par l’employeur'; });
+}
+function salInput(el) {
+  const f = curSal(), p = el.dataset.s; let v = val(el);
+  setPath(f, p, v);
+  if (p === 'statut') { const st = SALST.find(x => x[0] === v); if (st && st[2] != null) f.taux = String(st[2]); save(); render(); return; }
+  if (p === 'taux') { const st = SALST.find(x => x[2] != null && String(x[2]) === String(num(v))); f.statut = st ? st[0] : 'perso'; const sel = $('#salSt'); if (sel) sel.value = f.statut; }
+  if (/^av\.\d+\.type$/.test(p)) { const a = f.av[+p.split('.')[1]], d = AVDEF[v] || {}; a.freq = d.freq || 'm'; a.inc = !!d.inc; if (v === 'tr') { a.jours = a.jours || '20'; a.valeur = a.valeur || '10'; a.part = a.part || '50'; } save(); render(); return; }
+  save(); updSal();
+}
+const SALACT = {
+  salsel: v => { SAL().cur = v; save(); render(); },
+  salnew: () => { const s = SAL(), f = newSal('Simulation ' + (s.list.length + 1)); s.list.push(f); s.cur = f.id; save(); render(); scrollTo(0, 0); toast('Nouvelle simulation'); },
+  saldup: () => { const s = SAL(), f = clone(curSal()); f.id = uid(); f.nom = (f.nom || 'Simulation') + ' (copie)'; s.list.push(f); s.cur = f.id; save(); render(); scrollTo(0, 0); toast('Simulation dupliquée'); },
+  saldel: () => { const s = SAL(), f = curSal(); if (!confirm('Supprimer la simulation « ' + (f.nom || 'Sans nom') + ' » ?')) return; s.list = s.list.filter(x => x.id !== f.id); if (!s.list.length) s.list.push(newSal()); s.cur = s.list[0].id; save(); render(); },
+  salpadd: () => { const f = curSal(); (f.primes || (f.primes = [])).push({ id: uid(), nom: '', montant: '', type: 'brut', freq: 'a' }); save(); render(); },
+  salpdel: v => { const f = curSal(); f.primes = f.primes.filter(p => p.id !== v); save(); render(); },
+  salaadd: v => { const f = curSal(), t = v || 'autre', d = AVDEF[t] || {}; const a = { id: uid(), type: t, nom: '', montant: '', freq: d.freq || 'm', inc: !!d.inc }; if (t === 'tr') { a.jours = '20'; a.valeur = '10'; a.part = '50'; } (f.av || (f.av = [])).push(a); save(); render(); },
+  saladel: v => { const f = curSal(); f.av = f.av.filter(a => a.id !== v); save(); render(); },
+};
+function tabSal() {
+  const s = SAL(), f = curSal(), inp = (p, v, ph, extra = '') => `<input data-s="${p}" value="${esc(v ?? '')}" inputmode="decimal" autocomplete="off" placeholder="${ph || ''}" ${extra}>`;
+  const sel = (p, opts, v, extra = '') => `<select data-s="${p}" ${extra}>${opts.map(([k, l]) => `<option value="${k}" ${String(v) === String(k) ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+  const r0 = salCalc(f);
+  return `<div class="wrap sal"><div class="top"><span class="app">Salaire</span><span class="row2"><button class="btn sm" data-act="salnew">+ Nouvelle</button></span></div>
+  <div class="card">
+   ${s.list.length > 1 ? `<div class="scrollx salchips">${s.list.map(x => `<button class="chipbtn${x.id === f.id ? ' on' : ''}" data-act="salsel" data-v="${x.id}">${esc(x.nom || 'Sans nom')}</button>`).join('')}</div>` : ''}
+   <label class="f">Nom de la simulation<input data-s="nom" value="${esc(f.nom)}" placeholder="Ex. Ma situation, Offre Airbus…"></label>
+   <div class="row2"><button class="btn sm ghost" data-act="saldup">⧉ Dupliquer</button><button class="btn sm danger" data-act="saldel">🗑 Supprimer</button></div>
+  </div>
+  <div class="card hero" id="salRes">${salResHtml(f)}</div>
+  <div class="card" id="salCmp" ${s.list.length < 2 ? 'hidden' : ''}>${salCmpHtml()}</div>
+  <div class="card"><h2>Salaire</h2>
+   <label class="f">Salaire brut par mois (€)${inp('brut', f.brut, 'Ex. 2500')}<span class="small salhint" id="salHint">${num(f.brut) ? '≈ ' + eur(r0.salNet) + ' net par mois' : ''}</span></label>
+   <div class="grid2"><label class="f">Statut${sel('statut', SALST.map(x => [x[0], x[1]]), f.statut, 'id="salSt"')}</label>
+   <label class="f">Cotisations (%)${inp('taux', f.taux, '22')}</label></div>
+   <label class="f">Mois de salaire par an${sel('mois', [['12', '12 mois'], ['13', '13 mois (13e mois)'], ['13.5', '13,5 mois'], ['14', '14 mois (13e + 14e)'], ['15', '15 mois']], f.mois)}</label>
+   <div class="small muted">Estimation avec les taux moyens 2026. Pour être exact, prends ton taux sur ta fiche de paie : 100 − (net ÷ brut × 100).</div>
+  </div>
+  <div class="card"><h2>Primes</h2>
+   ${(f.primes || []).map((p, i) => `<div class="salitem"><div class="grid2"><label class="f">Nom<input data-s="primes.${i}.nom" value="${esc(p.nom)}" placeholder="Ex. prime de fin d’année"></label><label class="f">Montant (€)${inp('primes.' + i + '.montant', p.montant, '0')}</label></div>
+    <div class="row2 salopt">${sel('primes.' + i + '.type', [['brut', 'Brut'], ['net', 'Net']], p.type)}${sel('primes.' + i + '.freq', [['m', 'Par mois'], ['a', 'Par an']], p.freq)}<button class="ib sm" data-act="salpdel" data-v="${p.id}" aria-label="Supprimer la prime">🗑</button></div></div>`).join('') || '<div class="small muted">Aucune prime. Le 13e mois se règle dans « Mois de salaire par an ».</div>'}
+   <button class="btn sm ghost" data-act="salpadd">+ Ajouter une prime</button>
+  </div>
+  <div class="card"><h2>Pension et autres revenus</h2>
+   <div class="grid2"><label class="f">Pension par mois (€)${inp('pension', f.pension, '0')}</label>
+   <label class="f">Montant saisi${sel('penBrut', [['', 'Net'], ['1', 'Brut']], f.penBrut ? '1' : '', 'data-bool="1"')}</label></div>
+   <label class="f">Autres revenus nets par mois (€)${inp('autres', f.autres, '0')}</label>
+   <div class="small muted">Pension : mets le montant versé sur ton compte (net). Si tu n’as que le brut, choisis « Brut » : on retire la CSG, la CRDS et la CASA au taux plein. Autres revenus : loyers, allocations… (pas d’impôt calculé dessus).</div>
+  </div>
+  <div class="card"><h2>Avantages</h2>
+   <div class="small muted">Ce que l’employeur paie en plus du salaire. Coche « Compter » pour l’ajouter au total.</div>
+   ${(f.av || []).map((a, i) => `<div class="salitem">
+    <div class="row2 salopt">${sel('av.' + i + '.type', AVTYPES, a.type)}<button class="ib sm" data-act="saladel" data-v="${a.id}" aria-label="Supprimer l’avantage">🗑</button></div>
+    ${a.type === 'tr' ? `<div class="grid3"><label class="f">Jours par mois${inp('av.' + i + '.jours', a.jours, '20')}</label><label class="f">Valeur d’un ticket (€)${inp('av.' + i + '.valeur', a.valeur, '10')}</label><label class="f">Part employeur (%)${inp('av.' + i + '.part', a.part, '50')}</label></div><div class="small salhint" id="avg${i}">= ${eur(avGain(a))} par mois payés par l’employeur</div>`
+      : `<div class="grid2">${a.type === 'autre' ? `<label class="f">Nom<input data-s="av.${i}.nom" value="${esc(a.nom || '')}" placeholder="Ex. prime de panier"></label>` : ''}<label class="f">Montant net (€)${inp('av.' + i + '.montant', a.montant, '0')}</label>${sel('av.' + i + '.freq', [['m', 'Par mois'], ['a', 'Par an']], a.freq, 'class="salfreq"')}</div>`}
+    ${AVHELP[a.type] ? `<div class="small muted">${AVHELP[a.type]}</div>` : ''}
+    <label class="swrow"><span>Compter dans le total</span><span class="sw"><input type="checkbox" data-s="av.${i}.inc" ${a.inc ? 'checked' : ''}><i></i></span></label></div>`).join('')}
+   <div class="salchips wrapchips">${AVTYPES.map(([k, l]) => `<button class="chipbtn" data-act="salaadd" data-v="${k}">+ ${l}</button>`).join('')}</div>
+  </div>
+  <div class="card"><h2>Impôt (facultatif)</h2>
+   <label class="f">Taux de prélèvement à la source (%)${inp('pas', f.pas, 'Ex. 7,5')}</label>
+   <div class="small muted">Ton taux est sur ta fiche de paie ou sur impots.gouv.fr (Gérer mon prélèvement à la source). Laisse vide pour voir le net avant impôt.</div>
+  </div>
+  <div class="small muted" style="text-align:center;padding:0 10px">Calcul indicatif, fait sur ton appareil. Le net réel dépend de ta convention, de ta mutuelle et de tes heures.</div>
+  </div>`;
+}
 
 /* ---- onglet Guide ---- */
 function tabGuide() {
@@ -1473,6 +1615,7 @@ const val = el => el.type === 'checkbox' ? el.checked : (el.dataset.num ? Number
 document.addEventListener('input', e => {
   const el = e.target, cv = ui.ed ? curCV() : null;
   if (el.dataset.u) { setPath(ui, el.dataset.u, val(el)); return; }
+  if (el.dataset.s) { salInput(el); return; }
   if (!cv) return;
   if (el.dataset.p) { setPath(cv, el.dataset.p, val(el)); touch(cv); liveSoon(); }
   else if (el.dataset.l) { const it = cv.data[el.dataset.l].find(x => x.id === el.dataset.i); if (it) { it[el.dataset.k] = val(el); touch(cv); liveSoon(); } }
@@ -1488,6 +1631,7 @@ document.addEventListener('change', e => {
 document.addEventListener('toggle', e => { const d = e.target; if (d.dataset && d.dataset.d) { ui.open[d.dataset.d] = d.open; growAll(); } }, true);
 
 const ACT = {
+  ...SALACT,
   nav: v => { ui.tab = v; ui.ed = null; render(); scrollTo(0, 0); },
   closesheet: () => closeSheet(),
   newcv: () => { closeSheet(); openSheet(`<div class="sh"><h2>Nouveau CV</h2><button class="ib" data-act="closesheet">✕</button></div><label class="f">Nom du CV<input data-u="nn" value="" placeholder="Ex. CV chef de projet"></label>
