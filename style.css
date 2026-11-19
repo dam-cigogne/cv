@@ -463,3 +463,14 @@ body.demo #cmp{top:calc(30px + env(safe-area-inset-top,0px))}
 .saltab .salline small{color:var(--muted);opacity:1}
 .saltab .salline.cur{background:var(--accent-soft);border-radius:10px}
 @media (max-width:380px){nav.tabs button{font-size:10.5px}.grid3{grid-template-columns:1fr 1fr}}
+nav.tabs button{min-width:0;overflow:hidden;white-space:nowrap}
+@media (max-width:440px){nav.tabs{padding-left:8px;padding-right:8px}nav.tabs .in{padding:5px}nav.tabs button{font-size:10.5px;letter-spacing:-.01em}nav.tabs button svg{width:21px;height:21px}}
+.sal input.salbig{font-size:22px;font-weight:600;padding:12px 14px}
+.sal .salper button.on{background:var(--surface);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.sal .salhint.warn{color:var(--bad)}
+.salmore>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
+.salmore>summary::-webkit-details-marker{display:none}
+.salmore>summary h2::before{content:"▸ ";color:var(--accent)}
+.salmore[open]>summary h2::before{content:"▾ "}
+.salmore[open]{gap:10px}
+.salmore h3{margin-top:6px}
